@@ -52,8 +52,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
       const price = parseFloat(formData.productPrice);
       const percent = parseFloat(formData.feePercentage);
       if (!isNaN(price) && !isNaN(percent)) {
-        const calculated = (price * percent) / 100;
-        setFormData(prev => ({ ...prev, expectedProfit: calculated.toFixed(2) }));
+        setFormData(prev => ({ ...prev, expectedProfit: ((price * percent) / 100).toFixed(2) }));
       }
     }
   }, [formData.productPrice, formData.feePercentage, formData.type]);
@@ -61,14 +60,11 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isClientOrder = formData.type === TransactionType.CLIENT_ORDER;
-    const finalAmount = isClientOrder ? 0 : Math.abs(parseFloat(formData.amount || '0'));
-    const finalProfit = Math.abs(parseFloat(formData.expectedProfit || '0'));
-
     const transactionData = {
-      amount: finalAmount,
+      amount: isClientOrder ? 0 : Math.abs(parseFloat(formData.amount || '0')),
       productPrice: isClientOrder ? parseFloat(formData.productPrice) : undefined,
       feePercentage: isClientOrder ? parseFloat(formData.feePercentage) : undefined,
-      expectedProfit: finalProfit,
+      expectedProfit: Math.abs(parseFloat(formData.expectedProfit || '0')),
       date: formData.date,
       category: formData.category,
       type: formData.type,
@@ -81,152 +77,86 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
       isSold: initialData ? initialData.isSold : false
     };
 
-    if (initialData && onUpdate) {
-      onUpdate(initialData.id, { ...initialData, ...transactionData });
-    } else {
-      onAdd(transactionData);
-    }
+    if (initialData && onUpdate) onUpdate(initialData.id, { ...initialData, ...transactionData });
+    else onAdd(transactionData);
   };
 
-  const showProfitSection = formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT;
-
   return (
-    <div className="max-w-4xl mx-auto py-2 md:py-12 md:px-6 pb-40">
-      <div className="bg-white p-5 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 shadow-2xl relative overflow-hidden">
-        {/* Décoration de fond */}
-        <div className={`absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 blur-[80px] md:blur-[120px] opacity-20 -mr-20 -mt-20 transition-colors ${formData.owner === Owner.LARBI ? 'bg-indigo-600' : 'bg-purple-600'}`}></div>
-        
-        {/* Header avec bouton Suppression DIRECT */}
-        <div className="flex items-center justify-between mb-8 md:mb-12 relative z-10">
-           <button onClick={onCancel} type="button" className="p-3 px-4 bg-slate-50 rounded-xl text-slate-400 font-black text-[9px] uppercase tracking-widest active:scale-95 transition-all">
-             Annuler
-           </button>
-           
-           <h3 className="text-lg md:text-3xl font-black text-slate-900 tracking-tighter uppercase">
-            {initialData ? 'Edition' : 'Nouveau'}
+    <div className="max-w-4xl mx-auto py-4 md:py-12 md:px-6">
+      <div className="bg-white p-6 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 shadow-2xl relative">
+        <div className="flex items-center justify-between mb-8">
+           <button onClick={onCancel} type="button" className="text-slate-400 font-black text-[10px] uppercase">← Retour</button>
+           <h3 className="text-xl font-black uppercase tracking-tighter">
+            {initialData ? 'Modifier' : 'Nouveau Flux'}
           </h3>
-
-          {initialData && onDelete ? (
-            <button 
-              type="button" 
-              onClick={() => onDelete(initialData.id)}
-              className="p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-100 active:scale-90 transition-all flex items-center justify-center"
-              title="Supprimer la transaction"
-            >
-              <Icons.Trash />
-            </button>
-          ) : (
-            <div className="w-12"></div>
-          )}
+          <div className="w-10"></div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-10 relative z-10">
-          {/* Sélection Propriétaire */}
-          <div className="bg-slate-50 p-1.5 rounded-2xl md:rounded-[2rem] flex gap-1.5">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-slate-50 p-1.5 rounded-2xl flex gap-1.5">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => setFormData({...formData, owner: o})}
-                className={`flex-1 py-4 md:py-5 rounded-xl md:rounded-[1.8rem] font-black text-[10px] md:text-sm transition-all ${
-                  formData.owner === o 
-                  ? (o === Owner.LARBI ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' : 'bg-purple-600 text-white shadow-xl shadow-purple-100')
-                  : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
+              <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-4 rounded-xl font-black text-[10px] transition-all ${formData.owner === o ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>
                 {o.toUpperCase()}
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Type de flux</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})}
-                className="w-full px-5 md:px-8 py-4 md:py-5 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold text-slate-700 outline-none text-sm appearance-none"
-              >
-                <option value={TransactionType.CLIENT_ORDER}>Commande Client</option>
-                <option value={TransactionType.INVESTMENT}>Achat Stock (Flip)</option>
-                <option value={TransactionType.INCOME}>Revenu Entrant</option>
-                <option value={TransactionType.EXPENSE}>Dépense / Frais</option>
-                <option value={TransactionType.INITIAL_BALANCE}>Solde Initial</option>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[8px] font-black uppercase text-slate-400">Type</label>
+              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-4 bg-slate-50 rounded-xl font-bold text-xs appearance-none">
+                <option value={TransactionType.CLIENT_ORDER}>Commande</option>
+                <option value={TransactionType.INVESTMENT}>Achat Flip</option>
+                <option value={TransactionType.INCOME}>Revenu</option>
+                <option value={TransactionType.EXPENSE}>Dépense</option>
               </select>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
-              <input
-                type="date" value={formData.date}
-                onChange={(e) => setFormData({...formData, date: e.target.value})}
-                className="w-full px-5 md:px-8 py-4 md:py-5 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold text-slate-700 outline-none text-sm"
-              />
+            <div className="space-y-1">
+              <label className="text-[8px] font-black uppercase text-slate-400">Date</label>
+              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-slate-50 rounded-xl font-bold text-xs" />
             </div>
           </div>
 
-          <div className="p-5 md:p-10 bg-slate-50 rounded-2xl md:rounded-[3rem] border border-slate-100 space-y-4">
-            <div className="flex justify-between items-center">
-              <h4 className="font-black text-slate-900 uppercase tracking-widest text-[9px]">Valeur €</h4>
-              <label className="flex items-center space-x-2 cursor-pointer select-none">
-                <input 
-                  type="checkbox" checked={formData.isForecast}
-                  onChange={(e) => setFormData({...formData, isForecast: e.target.checked})}
-                  className="w-4 h-4 rounded-md text-indigo-600"
-                />
-                <span className="text-[9px] font-black text-slate-400 uppercase">Prévision</span>
-              </label>
-            </div>
-
-            <div className="relative">
-              <span className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-2xl md:text-3xl font-black text-slate-300">€</span>
-              <input
-                type="number" required step="0.01" value={formData.type === TransactionType.CLIENT_ORDER ? formData.productPrice : formData.amount}
-                placeholder="0.00"
-                onChange={(e) => setFormData({...formData, [formData.type === TransactionType.CLIENT_ORDER ? 'productPrice' : 'amount']: e.target.value})}
-                className="w-full pl-12 md:pl-16 pr-6 md:pr-8 py-6 md:py-10 bg-white border-none rounded-2xl md:rounded-[2.5rem] text-3xl md:text-6xl font-black text-indigo-600 outline-none shadow-sm"
-              />
-            </div>
+          <div className="p-6 bg-slate-50 rounded-3xl space-y-2">
+            <p className="text-[8px] font-black uppercase text-slate-400 text-center">Montant (€)</p>
+            <input
+              type="number" required step="0.01" 
+              value={formData.type === TransactionType.CLIENT_ORDER ? formData.productPrice : formData.amount}
+              onChange={(e) => setFormData({...formData, [formData.type === TransactionType.CLIENT_ORDER ? 'productPrice' : 'amount']: e.target.value})}
+              className="w-full bg-transparent text-center text-4xl font-black text-indigo-600 outline-none"
+              placeholder="0.00"
+            />
           </div>
 
-          {showProfitSection && (
-            <div className="bg-emerald-50 p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-emerald-100 flex items-center justify-between gap-4">
-              <div className="flex-1">
-                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Profit net visé</p>
-                <div className="flex items-center">
-                  <span className="text-xl md:text-3xl font-black text-emerald-700">€</span>
-                  <input 
-                    type="number" step="0.01" value={formData.expectedProfit}
-                    onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})}
-                    className="bg-transparent border-none p-0 text-3xl md:text-5xl font-black text-emerald-700 focus:ring-0 w-full"
-                    readOnly={formData.type === TransactionType.CLIENT_ORDER}
-                  />
-                </div>
+          {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
+            <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100 flex items-center justify-between">
+              <div>
+                <p className="text-[8px] font-black text-emerald-600 uppercase mb-1">Profit estimé</p>
+                <input type="number" step="0.01" value={formData.expectedProfit} onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})} className="bg-transparent text-2xl font-black text-emerald-700 outline-none w-32" />
               </div>
-              <div className="hidden md:flex w-16 h-16 bg-white rounded-full items-center justify-center text-2xl shadow-sm border border-emerald-100/50">💎</div>
+              <span className="text-2xl">💎</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-            <input
-              type="text" value={formData.projectName}
-              onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-              className="w-full px-6 py-4 md:py-6 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm md:text-base outline-none focus:ring-2 focus:ring-slate-100"
-              placeholder="Nom du Projet / Objet"
-            />
-            <input
-              type="text" value={formData.clientName}
-              onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-              className="w-full px-6 py-4 md:py-6 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm md:text-base outline-none focus:ring-2 focus:ring-slate-100"
-              placeholder="Client / Note rapide"
-            />
+          <div className="space-y-3">
+            <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-4 bg-slate-50 rounded-xl font-bold text-xs" placeholder="Nom du Projet" />
+            <input type="text" value={formData.clientName} onChange={(e) => setFormData({...formData, clientName: e.target.value})} className="w-full p-4 bg-slate-50 rounded-xl font-bold text-xs" placeholder="Note / Client" />
           </div>
 
-          <div className="pt-6">
-            <button type="submit" className={`w-full text-white font-black py-6 md:py-10 rounded-2xl md:rounded-[2.5rem] text-lg md:text-2xl transition-all uppercase tracking-[0.2em] shadow-2xl active:scale-95 ${
-              formData.owner === Owner.LARBI ? 'bg-indigo-600 shadow-indigo-100' : 'bg-purple-600 shadow-purple-200'
-            }`}>
-              {initialData ? 'Mettre à jour' : 'Sauvegarder'}
+          {/* ZONE DANGER SUPPRESSION : Juste avant le bouton de sauvegarde */}
+          <div className="pt-4 flex flex-col gap-4">
+            {initialData && onDelete && (
+              <button 
+                type="button" 
+                onClick={() => onDelete(initialData.id)}
+                className="w-full bg-rose-600 text-white font-black py-5 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-rose-200"
+              >
+                !!! SUPPRIMER DÉFINITIVEMENT !!!
+              </button>
+            )}
+
+            <button type="submit" className="w-full bg-slate-900 text-white font-black py-6 rounded-2xl text-xs uppercase tracking-[0.2em] shadow-xl">
+              {initialData ? 'Valider les changements' : 'Enregistrer le flux'}
             </button>
           </div>
         </form>
