@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Transaction, AccountType, TransactionType, CATEGORIES, Owner } from '../types';
 
@@ -90,29 +89,29 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
   const showProfitSection = formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT;
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-6">
-      <div className="bg-white p-12 rounded-[4rem] border border-slate-100 shadow-2xl relative overflow-hidden transition-all duration-500">
-        <div className={`absolute top-0 right-0 w-64 h-64 blur-[120px] opacity-20 -mr-20 -mt-20 transition-colors duration-700 ${formData.owner === Owner.LARBI ? 'bg-indigo-600' : 'bg-purple-600'}`}></div>
+    <div className="max-w-4xl mx-auto py-4 md:py-12 md:px-6 pb-24">
+      <div className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[4rem] border border-slate-100 shadow-2xl relative overflow-hidden">
+        <div className={`absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 blur-[80px] md:blur-[120px] opacity-20 -mr-20 -mt-20 transition-colors ${formData.owner === Owner.LARBI ? 'bg-indigo-600' : 'bg-purple-600'}`}></div>
         
-        <div className="flex items-center justify-between mb-12">
-           <button onClick={onCancel} className="text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 font-black text-xs uppercase tracking-widest">
-             ← Annuler
+        <div className="flex items-center justify-between mb-8 md:mb-12 relative z-10">
+           <button onClick={onCancel} className="text-slate-400 font-black text-[9px] md:text-xs uppercase tracking-widest">
+             ← Retour
            </button>
-           <h3 className="text-4xl font-black text-slate-900 tracking-tighter">
-            {initialData ? 'Editer le Flux' : 'Nouvelle Opération'}
+           <h3 className="text-xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">
+            {initialData ? 'Editer' : 'Nouveau'}
           </h3>
           <div className="w-10"></div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
+        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-10 relative z-10">
           {/* Owner Toggle */}
-          <div className="bg-slate-50 p-2 rounded-[2rem] flex gap-2">
+          <div className="bg-slate-50 p-1.5 rounded-2xl md:rounded-[2rem] flex gap-1.5">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
               <button
                 key={o}
                 type="button"
                 onClick={() => setFormData({...formData, owner: o})}
-                className={`flex-1 py-5 rounded-[1.8rem] font-black text-sm transition-all duration-300 ${
+                className={`flex-1 py-3 md:py-5 rounded-xl md:rounded-[1.8rem] font-black text-[10px] md:text-sm transition-all ${
                   formData.owner === o 
                   ? (o === Owner.LARBI ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' : 'bg-purple-600 text-white shadow-xl shadow-purple-100')
                   : 'text-slate-400 hover:text-slate-600'
@@ -123,142 +122,93 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Type d'opération</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})}
-                className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 outline-none transition-all appearance-none"
+                className="w-full px-5 md:px-8 py-4 md:py-5 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold text-slate-700 outline-none text-sm"
               >
-                <option value={TransactionType.CLIENT_ORDER}>👤 Commande Client</option>
-                <option value={TransactionType.INVESTMENT}>👟 Achat Stock (Flip)</option>
-                <option value={TransactionType.INCOME}>📈 Revenu Entrant</option>
-                <option value={TransactionType.EXPENSE}>💸 Dépense / Frais</option>
-                <option value={TransactionType.INITIAL_BALANCE}>💰 Solde Initial</option>
+                <option value={TransactionType.CLIENT_ORDER}>Commande Client</option>
+                <option value={TransactionType.INVESTMENT}>Achat Stock (Flip)</option>
+                <option value={TransactionType.INCOME}>Revenu Entrant</option>
+                <option value={TransactionType.EXPENSE}>Dépense / Frais</option>
+                <option value={TransactionType.INITIAL_BALANCE}>Solde Initial</option>
               </select>
             </div>
 
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Compte Utilisé</label>
-              <select
-                value={formData.account}
-                onChange={(e) => setFormData({...formData, account: e.target.value as AccountType})}
-                className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 outline-none transition-all appearance-none"
-              >
-                <option value={AccountType.BANK}>🏦 Banque (Compte Principal)</option>
-                <option value={AccountType.CRYPTO}>🪙 Portefeuille Crypto</option>
-                <option value={AccountType.CASH}>💵 Espèces / Main à main</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Catégorie Métier</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 outline-none transition-all appearance-none"
-              >
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Date du flux</label>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
               <input
                 type="date" value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
-                className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 outline-none transition-all"
+                className="w-full px-5 md:px-8 py-4 md:py-5 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold text-slate-700 outline-none text-sm"
               />
             </div>
           </div>
 
-          <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 space-y-6">
+          <div className="p-6 md:p-10 bg-slate-50 rounded-[1.5rem] md:rounded-[3rem] border border-slate-100 space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs">Montant de l'opération</h4>
-              <label className="flex items-center space-x-3 cursor-pointer select-none">
+              <h4 className="font-black text-slate-900 uppercase tracking-widest text-[9px]">Montant Principal</h4>
+              <label className="flex items-center space-x-2 cursor-pointer select-none">
                 <input 
                   type="checkbox" checked={formData.isForecast}
                   onChange={(e) => setFormData({...formData, isForecast: e.target.checked})}
-                  className="w-6 h-6 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                  className="w-4 h-4 rounded-md text-indigo-600"
                 />
-                <span className="text-xs font-black text-slate-400 uppercase">Prévision</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase">Prévision</span>
               </label>
             </div>
 
-            {formData.type === TransactionType.CLIENT_ORDER ? (
-              <div className="relative">
-                <span className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">€</span>
-                <input
-                  type="number" required step="0.01" value={formData.productPrice}
-                  placeholder="0.00"
-                  onChange={(e) => setFormData({...formData, productPrice: e.target.value})}
-                  className="w-full pl-16 pr-8 py-8 bg-white border-none rounded-[2rem] text-5xl font-black text-indigo-600 focus:ring-4 focus:ring-indigo-100 outline-none placeholder:text-slate-100"
-                />
-                <p className="mt-4 text-[10px] font-black uppercase text-slate-400 px-4">Prix de l'article pour le client</p>
-              </div>
-            ) : (
-              <div className="relative">
-                <span className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">€</span>
-                <input
-                  type="number" required step="0.01" value={formData.amount}
-                  placeholder="0.00"
-                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                  className="w-full pl-16 pr-8 py-8 bg-white border-none rounded-[2rem] text-5xl font-black text-indigo-600 focus:ring-4 focus:ring-indigo-100 outline-none placeholder:text-slate-100"
-                />
-                <p className="mt-4 text-[10px] font-black uppercase text-slate-400 px-4">Somme réellement sortie / entrée</p>
-              </div>
-            )}
+            <div className="relative">
+              <span className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-xl md:text-2xl font-black text-slate-400">€</span>
+              <input
+                type="number" required step="0.01" value={formData.type === TransactionType.CLIENT_ORDER ? formData.productPrice : formData.amount}
+                placeholder="0.00"
+                onChange={(e) => setFormData({...formData, [formData.type === TransactionType.CLIENT_ORDER ? 'productPrice' : 'amount']: e.target.value})}
+                className="w-full pl-12 md:pl-16 pr-6 md:pr-8 py-6 md:py-8 bg-white border-none rounded-2xl md:rounded-[2rem] text-3xl md:text-5xl font-black text-indigo-600 outline-none"
+              />
+            </div>
           </div>
 
           {showProfitSection && (
-            <div className="bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-6 group">
+            <div className="bg-emerald-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border border-emerald-100 flex items-center justify-between gap-4">
               <div className="flex-1">
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Profit Net Attendu (Bénéfice)</p>
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Profit Net Visé</p>
                 <div className="flex items-center">
-                  <span className="text-3xl font-black text-emerald-700">€</span>
+                  <span className="text-xl md:text-3xl font-black text-emerald-700">€</span>
                   <input 
                     type="number" step="0.01" value={formData.expectedProfit}
                     onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})}
-                    className="bg-transparent border-none p-0 text-5xl font-black text-emerald-700 focus:ring-0 w-full"
+                    className="bg-transparent border-none p-0 text-3xl md:text-5xl font-black text-emerald-700 focus:ring-0 w-full"
                     readOnly={formData.type === TransactionType.CLIENT_ORDER}
                   />
                 </div>
               </div>
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm border border-emerald-100 animate-bounce group-hover:animate-none">💎</div>
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center text-xl md:text-2xl shadow-sm">💎</div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <input
-              type="text" value={formData.clientName}
-              onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-              className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl font-bold placeholder:text-slate-300"
-              placeholder="Nom du Client / Contact..."
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
             <input
               type="text" value={formData.projectName}
               onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-              className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl font-bold placeholder:text-slate-300"
-              placeholder="Nom du Produit (ex: Jordan 4 Red Thunder)..."
+              className="w-full px-6 py-4 md:py-5 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm"
+              placeholder="Nom du Projet / Produit"
+            />
+            <input
+              type="text" value={formData.clientName}
+              onChange={(e) => setFormData({...formData, clientName: e.target.value})}
+              className="w-full px-6 py-4 md:py-5 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm"
+              placeholder="Client (Optionnel)"
             />
           </div>
 
-          <textarea
-            value={formData.note}
-            onChange={(e) => setFormData({...formData, note: e.target.value})}
-            className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl font-bold placeholder:text-slate-300 min-h-[100px]"
-            placeholder="Notes complémentaires, détails de l'opération..."
-          />
-
-          <button type="submit" className={`w-full text-white font-black py-8 rounded-[2rem] text-xl transition-all uppercase tracking-widest shadow-2xl hover:scale-[1.02] active:scale-95 ${
-            formData.owner === Owner.LARBI ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-purple-600 hover:bg-purple-700 shadow-purple-200'
+          <button type="submit" className={`w-full text-white font-black py-6 md:py-8 rounded-2xl md:rounded-[2rem] text-lg md:text-xl transition-all uppercase tracking-widest shadow-xl active:scale-95 ${
+            formData.owner === Owner.LARBI ? 'bg-indigo-600' : 'bg-purple-600'
           }`}>
-            Enregistrer pour {formData.owner.toUpperCase()}
+            Sauvegarder
           </button>
         </form>
       </div>
