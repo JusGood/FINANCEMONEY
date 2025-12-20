@@ -21,14 +21,19 @@ export const initDB = () => {
 
 export const getSupabase = () => supabase;
 
+export const getProjectId = () => {
+  const url = localStorage.getItem('supabase_url');
+  if (!url) return 'Non connecté';
+  return url.split('//')[1]?.split('.')[0] || 'Inconnu';
+};
+
 export const signUp = async (email: string, pass: string, name: string) => {
-  if (!supabase) return { error: { message: "Base de données non configurée. Allez dans les réglages." } };
+  if (!supabase) return { error: { message: "Base de données non configurée." } };
   const { data, error } = await supabase.auth.signUp({
     email,
     password: pass,
     options: { 
-      data: { display_name: name },
-      emailRedirectTo: window.location.origin
+      data: { display_name: name }
     }
   });
   return { data, error };
@@ -45,10 +50,7 @@ export const signOut = async () => {
 };
 
 export const getTransactions = async (): Promise<Transaction[]> => {
-  if (!supabase) {
-    const saved = localStorage.getItem('finance_v3_data');
-    return saved ? JSON.parse(saved) : [];
-  }
+  if (!supabase) return [];
 
   const { data, error } = await supabase
     .from('transactions')
@@ -56,69 +58,37 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     .order('date', { ascending: false });
 
   if (error) {
-    console.error('Erreur de récupération:', error.message);
-    // Fallback local en cas d'erreur réseau ou table manquante
-    const saved = localStorage.getItem('finance_v3_data');
-    return saved ? JSON.parse(saved) : [];
+    console.error('Erreur Supabase:', error.message);
+    throw new Error(error.message); // On propage l'erreur pour que l'UI l'affiche
   }
   return data || [];
 };
 
 export const saveTransaction = async (tx: Transaction) => {
-  if (!supabase) {
-    const saved = await getTransactions();
-    const updated = [...saved, tx];
-    localStorage.setItem('finance_v3_data', JSON.stringify(updated));
-    return;
-  }
-
+  if (!supabase) return;
   const { error } = await supabase.from('transactions').insert([tx]);
-  if (error) {
-    console.error('Erreur sauvegarde cloud:', error.message);
-    // Backup local si échec
-    const saved = JSON.parse(localStorage.getItem('finance_v3_data') || '[]');
-    localStorage.setItem('finance_v3_data', JSON.stringify([...saved, tx]));
-  }
+  if (error) throw new Error(error.message);
 };
 
 export const updateTransactionDB = async (id: string, tx: Transaction) => {
-  if (!supabase) {
-    const saved = await getTransactions();
-    const updated = saved.map(t => t.id === id ? tx : t);
-    localStorage.setItem('finance_v3_data', JSON.stringify(updated));
-    return;
-  }
-
+  if (!supabase) return;
   const { error } = await supabase.from('transactions').update(tx).eq('id', id);
-  if (error) console.error('Erreur mise à jour cloud:', error.message);
+  if (error) throw new Error(error.message);
 };
 
 export const deleteTransactionDB = async (id: string) => {
-  if (!supabase) {
-    const saved = await getTransactions();
-    const updated = saved.filter(t => t.id !== id);
-    localStorage.setItem('finance_v3_data', JSON.stringify(updated));
-    return;
-  }
-
+  if (!supabase) return;
   const { error } = await supabase.from('transactions').delete().eq('id', id);
-  if (error) console.error('Erreur suppression cloud:', error.message);
+  if (error) throw new Error(error.message);
 };
 
-// Fonction pour écouter les changements en temps réel
 export const subscribeToChanges = (callback: () => void) => {
   if (!supabase) return null;
-  
   const channel = supabase
-    .channel('schema-db-changes')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'transactions' },
-      () => {
-        callback();
-      }
-    )
+    .channel('realtime-transactions')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+      callback();
+    })
     .subscribe();
-    
   return channel;
 };
