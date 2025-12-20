@@ -1,4 +1,3 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Transaction } from '../types';
 
@@ -59,7 +58,7 @@ export const getTransactions = async (): Promise<Transaction[]> => {
 
   if (error) {
     console.error('Erreur Supabase:', error.message);
-    throw new Error(error.message); // On propage l'erreur pour que l'UI l'affiche
+    throw new Error(error.message);
   }
   return data || [];
 };

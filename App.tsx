@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Transaction, Owner, TransactionType } from './types';
 import Layout from './components/Layout';
@@ -109,7 +108,7 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
 
   const isTableMissing = dbError?.toLowerCase().includes('relation "transactions" does not exist');
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black animate-pulse text-xs">INITIALISATION...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black animate-pulse text-xs uppercase tracking-widest">Initialisation...</div>;
 
   if (!user) {
     return (
@@ -137,10 +136,8 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
                 <button type="button" onClick={() => setAuthMode('login')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${authMode === 'login' ? 'bg-white text-slate-950' : 'text-white/50'}`}>Connexion</button>
                 <button type="button" onClick={() => setAuthMode('signup')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${authMode === 'signup' ? 'bg-white text-slate-950' : 'text-white/50'}`}>Inscription</button>
               </div>
-              
               <input type="email" placeholder="Email" className="w-full bg-white/10 border border-white/10 rounded-2xl p-4 text-white outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
               <input type="password" placeholder="Mot de passe" className="w-full bg-white/10 border border-white/10 rounded-2xl p-4 text-white outline-none" value={password} onChange={e => setPassword(e.target.value)} required />
-              
               {errorMsg && <p className="text-rose-500 text-[10px] font-black uppercase text-center">{errorMsg}</p>}
               <button type="submit" disabled={isAuthenticating} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl transition-all">
                 {isAuthenticating ? 'Chargement...' : 'Entrer dans le Vault'}
@@ -175,29 +172,28 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
         <div className="mb-10 p-10 bg-rose-50 border-2 border-rose-200 rounded-[3rem] animate-in zoom-in duration-500">
           <div className="flex items-center gap-4 mb-6">
             <span className="text-4xl">⚠️</span>
-            <h3 className="text-2xl font-black text-rose-900 uppercase">Table "transactions" manquante !</h3>
+            <h3 className="text-2xl font-black text-rose-900 uppercase">Configuration SQL Requise</h3>
           </div>
           <p className="text-rose-700 font-bold mb-6 text-sm">
-            Larbi, Yassine : Pour que l'app fonctionne, vous devez créer la table dans votre projet Supabase. 
-            C'est ce qui permet de partager les données entre vous deux.
+            La table "transactions" n'existe pas dans votre base Supabase. Copiez le code ci-dessous dans l'onglet "SQL Editor" de votre tableau de bord Supabase.
           </p>
           <div className="bg-slate-900 p-6 rounded-2xl relative group">
             <pre className="text-indigo-300 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{SQL_SETUP}</pre>
             <button 
-              onClick={() => { navigator.clipboard.writeText(SQL_SETUP); alert("Copié !"); }}
+              onClick={() => { navigator.clipboard.writeText(SQL_SETUP); alert("Code SQL copié !"); }}
               className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
             >
               Copier le SQL
             </button>
           </div>
           <div className="mt-6 flex items-start gap-3 bg-white/50 p-4 rounded-2xl text-xs text-rose-800">
-            <span className="font-black">PROCÉDURE :</span>
+            <span className="font-black italic">PROCÉDURE :</span>
             <ol className="list-decimal ml-4 space-y-1 font-bold">
-              <li>Allez sur votre projet <a href="https://supabase.com/dashboard" target="_blank" className="underline text-indigo-600">Supabase</a></li>
-              <li>Cliquez sur <b>SQL Editor</b> à gauche (icône <code>>_</code>)</li>
+              <li>Ouvrez votre projet Supabase</li>
+              <li>Allez dans <b>SQL Editor</b> (icône <code>{">_"}</code>)</li>
               <li>Cliquez sur <b>+ New Query</b></li>
-              <li>Collez le code ci-dessus et cliquez sur <b>RUN</b></li>
-              <li>Revenez ici et cliquez sur "Actualiser"</li>
+              <li>Collez le code et cliquez sur <b>RUN</b></li>
+              <li>Revenez ici et cliquez sur "Actualiser" en haut</li>
             </ol>
           </div>
         </div>
@@ -210,35 +206,44 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
 
       {!isTableMissing && (
         activeView === 'Add' ? (
-          <TransactionForm onAdd={async (d) => {
-            const tx = {...d, id: Math.random().toString(36).substr(2, 9)};
-            try { await DB.saveTransaction(tx); await loadTransactions(); setActiveView(d.owner); } 
-            catch(e: any) { setDbError(e.message); }
-          }} onUpdate={async (id, d) => {
-            try { await DB.updateTransactionDB(id, d); await loadTransactions(); setEditingTransaction(null); setActiveView(d.owner); } 
-            catch(e: any) { setDbError(e.message); }
-          }} initialData={editingTransaction} onCancel={() => setActiveView(Owner.GLOBAL)} />
+          <TransactionForm 
+            onAdd={async (d) => {
+              const tx = {...d, id: Math.random().toString(36).substr(2, 9)};
+              try { await DB.saveTransaction(tx); await loadTransactions(); setActiveView(d.owner); } 
+              catch(e: any) { setDbError(e.message); }
+            }} 
+            onUpdate={async (id, d) => {
+              try { await DB.updateTransactionDB(id, d); await loadTransactions(); setEditingTransaction(null); setActiveView(d.owner); } 
+              catch(e: any) { setDbError(e.message); }
+            }} 
+            initialData={editingTransaction} 
+            onCancel={() => setActiveView(Owner.GLOBAL)} 
+          />
         ) : (
           <div className="space-y-12">
-            <Dashboard transactions={transactions} ownerFilter={activeView as Owner} onConfirmSale={async (id) => {
-               const tx = transactions.find(t => t.id === id);
-               if (!tx) return;
-               await DB.updateTransactionDB(id, {...tx, isSold: true});
-               const incomeTx: Transaction = {
-                 id: Math.random().toString(36).substr(2, 9),
-                 date: new Date().toISOString().split('T')[0],
-                 amount: tx.amount + (tx.expectedProfit || 0),
-                 category: tx.category, type: TransactionType.INCOME, account: tx.account,
-                 owner: tx.owner, note: `Vente : ${tx.projectName}`, isSold: true
-               };
-               await DB.saveTransaction(incomeTx);
-               await loadTransactions();
-            }} />
+            <Dashboard 
+              transactions={transactions} 
+              ownerFilter={activeView as Owner} 
+              onConfirmSale={async (id) => {
+                 const tx = transactions.find(t => t.id === id);
+                 if (!tx) return;
+                 await DB.updateTransactionDB(id, {...tx, isSold: true});
+                 const incomeTx: Transaction = {
+                   id: Math.random().toString(36).substr(2, 9),
+                   date: new Date().toISOString().split('T')[0],
+                   amount: tx.amount + (tx.expectedProfit || 0),
+                   category: tx.category, type: TransactionType.INCOME, account: tx.account,
+                   owner: tx.owner, note: `Vente : ${tx.projectName}`, isSold: true
+                 };
+                 await DB.saveTransaction(incomeTx);
+                 await loadTransactions();
+              }} 
+            />
             
             <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-2xl overflow-hidden">
               <div className="p-10 flex flex-col md:flex-row justify-between items-center gap-6 border-b border-slate-50">
                  <h4 className="text-2xl font-black italic">Journal Partagé</h4>
-                 <input type="text" placeholder="Rechercher..." className="bg-slate-50 rounded-2xl px-6 py-4 text-sm font-bold outline-none w-80" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                 <input type="text" placeholder="Rechercher un projet..." className="bg-slate-50 rounded-2xl px-6 py-4 text-sm font-bold outline-none w-80 focus:ring-2 focus:ring-indigo-100 transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -250,15 +255,15 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
                         <td className="px-10 py-8"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${t.owner === Owner.LARBI ? 'bg-indigo-100 text-indigo-600' : 'bg-purple-100 text-purple-600'}`}>{t.owner}</span></td>
                         <td className="px-10 py-8 font-black text-slate-900">{t.projectName || t.category}</td>
                         <td className={`px-10 py-8 text-right font-black text-lg ${t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE ? 'text-emerald-500' : 'text-rose-500'}`}>{t.amount.toLocaleString()} €</td>
-                        <td className="px-10 py-8 flex justify-center gap-2">
+                        <td className="px-10 py-8 flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-3 bg-slate-100 rounded-xl hover:bg-indigo-600 hover:text-white transition-all"><Icons.Pencil /></button>
-                          <button onClick={async () => { if(confirm('Supprimer ?')) { await DB.deleteTransactionDB(t.id); loadTransactions(); } }} className="p-3 bg-slate-100 rounded-xl hover:bg-rose-500 hover:text-white transition-all"><Icons.Trash /></button>
+                          <button onClick={async () => { if(confirm('Supprimer cette transaction ?')) { await DB.deleteTransactionDB(t.id); loadTransactions(); } }} className="p-3 bg-slate-100 rounded-xl hover:bg-rose-500 hover:text-white transition-all"><Icons.Trash /></button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {transactions.length === 0 && <div className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-xs">Aucune donnée sur le cloud</div>}
+                {transactions.length === 0 && <div className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-xs italic">Aucune donnée synchronisée</div>}
               </div>
             </div>
           </div>
