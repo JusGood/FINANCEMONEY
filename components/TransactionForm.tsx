@@ -93,16 +93,31 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
   return (
     <div className="max-w-4xl mx-auto py-2 md:py-12 md:px-6 pb-40">
       <div className="bg-white p-5 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 shadow-2xl relative overflow-hidden">
+        {/* Décoration de fond */}
         <div className={`absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 blur-[80px] md:blur-[120px] opacity-20 -mr-20 -mt-20 transition-colors ${formData.owner === Owner.LARBI ? 'bg-indigo-600' : 'bg-purple-600'}`}></div>
         
+        {/* Header avec bouton Suppression DIRECT */}
         <div className="flex items-center justify-between mb-8 md:mb-12 relative z-10">
-           <button onClick={onCancel} className="p-3 px-5 bg-slate-50 rounded-xl text-slate-400 font-black text-[9px] md:text-xs uppercase tracking-widest active:scale-95 transition-all">
-             ← Annuler
+           <button onClick={onCancel} type="button" className="p-3 px-4 bg-slate-50 rounded-xl text-slate-400 font-black text-[9px] uppercase tracking-widest active:scale-95 transition-all">
+             Annuler
            </button>
-           <h3 className="text-xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">
-            {initialData ? 'Modification' : 'Nouveau Flux'}
+           
+           <h3 className="text-lg md:text-3xl font-black text-slate-900 tracking-tighter uppercase">
+            {initialData ? 'Edition' : 'Nouveau'}
           </h3>
-          <div className="w-10 md:w-16"></div>
+
+          {initialData && onDelete ? (
+            <button 
+              type="button" 
+              onClick={() => onDelete(initialData.id)}
+              className="p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-100 active:scale-90 transition-all flex items-center justify-center"
+              title="Supprimer la transaction"
+            >
+              <Icons.Trash />
+            </button>
+          ) : (
+            <div className="w-12"></div>
+          )}
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6 md:space-y-10 relative z-10">
@@ -188,7 +203,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
                   />
                 </div>
               </div>
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center text-xl md:text-2xl shadow-sm border border-emerald-100/50">💎</div>
+              <div className="hidden md:flex w-16 h-16 bg-white rounded-full items-center justify-center text-2xl shadow-sm border border-emerald-100/50">💎</div>
             </div>
           )}
 
@@ -207,23 +222,12 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             />
           </div>
 
-          <div className="pt-6 space-y-4">
+          <div className="pt-6">
             <button type="submit" className={`w-full text-white font-black py-6 md:py-10 rounded-2xl md:rounded-[2.5rem] text-lg md:text-2xl transition-all uppercase tracking-[0.2em] shadow-2xl active:scale-95 ${
-              formData.owner === Owner.LARBI ? 'bg-indigo-600 shadow-indigo-100' : 'bg-purple-600 shadow-purple-100'
+              formData.owner === Owner.LARBI ? 'bg-indigo-600 shadow-indigo-100' : 'bg-purple-600 shadow-purple-200'
             }`}>
               {initialData ? 'Mettre à jour' : 'Sauvegarder'}
             </button>
-
-            {initialData && onDelete && (
-              <button 
-                type="button" 
-                onClick={() => onDelete(initialData.id)}
-                className="w-full bg-rose-50 text-rose-600 font-black py-6 rounded-2xl text-xs md:text-sm uppercase tracking-[0.3em] active:bg-rose-100 border border-rose-100 flex items-center justify-center gap-2"
-              >
-                <Icons.Trash />
-                Supprimer la transaction
-              </button>
-            )}
           </div>
         </form>
       </div>
