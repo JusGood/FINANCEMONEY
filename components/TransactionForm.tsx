@@ -91,30 +91,22 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
   const showProfitSection = formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT;
 
   return (
-    <div className="max-w-4xl mx-auto py-2 md:py-12 md:px-6 pb-32">
+    <div className="max-w-4xl mx-auto py-2 md:py-12 md:px-6 pb-40">
       <div className="bg-white p-5 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 shadow-2xl relative overflow-hidden">
         <div className={`absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 blur-[80px] md:blur-[120px] opacity-20 -mr-20 -mt-20 transition-colors ${formData.owner === Owner.LARBI ? 'bg-indigo-600' : 'bg-purple-600'}`}></div>
         
         <div className="flex items-center justify-between mb-8 md:mb-12 relative z-10">
-           <button onClick={onCancel} className="p-3 bg-slate-50 rounded-xl text-slate-400 font-black text-[9px] md:text-xs uppercase tracking-widest active:scale-95 transition-all">
+           <button onClick={onCancel} className="p-3 px-5 bg-slate-50 rounded-xl text-slate-400 font-black text-[9px] md:text-xs uppercase tracking-widest active:scale-95 transition-all">
              ← Annuler
            </button>
            <h3 className="text-xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">
-            {initialData ? 'Edition' : 'Nouveau'}
+            {initialData ? 'Modification' : 'Nouveau Flux'}
           </h3>
-          {initialData && onDelete ? (
-            <button 
-              type="button" 
-              onClick={() => onDelete(initialData.id)}
-              className="p-3 bg-rose-50 text-rose-500 rounded-xl active:scale-95 transition-all"
-            >
-              <Icons.Trash />
-            </button>
-          ) : <div className="w-10"></div>}
+          <div className="w-10 md:w-16"></div>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6 md:space-y-10 relative z-10">
-          {/* Owner Toggle */}
+          {/* Sélection Propriétaire */}
           <div className="bg-slate-50 p-1.5 rounded-2xl md:rounded-[2rem] flex gap-1.5">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
               <button
@@ -160,7 +152,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
           <div className="p-5 md:p-10 bg-slate-50 rounded-2xl md:rounded-[3rem] border border-slate-100 space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="font-black text-slate-900 uppercase tracking-widest text-[9px]">Valeur Transaction</h4>
+              <h4 className="font-black text-slate-900 uppercase tracking-widest text-[9px]">Valeur €</h4>
               <label className="flex items-center space-x-2 cursor-pointer select-none">
                 <input 
                   type="checkbox" checked={formData.isForecast}
@@ -185,7 +177,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           {showProfitSection && (
             <div className="bg-emerald-50 p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-emerald-100 flex items-center justify-between gap-4">
               <div className="flex-1">
-                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Profit net estimé</p>
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Profit net visé</p>
                 <div className="flex items-center">
                   <span className="text-xl md:text-3xl font-black text-emerald-700">€</span>
                   <input 
@@ -204,22 +196,35 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             <input
               type="text" value={formData.projectName}
               onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-              className="w-full px-6 py-4 md:py-6 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm md:text-base"
+              className="w-full px-6 py-4 md:py-6 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm md:text-base outline-none focus:ring-2 focus:ring-slate-100"
               placeholder="Nom du Projet / Objet"
             />
             <input
               type="text" value={formData.clientName}
               onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-              className="w-full px-6 py-4 md:py-6 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm md:text-base"
+              className="w-full px-6 py-4 md:py-6 bg-slate-50 border-none rounded-xl md:rounded-3xl font-bold placeholder:text-slate-300 text-sm md:text-base outline-none focus:ring-2 focus:ring-slate-100"
               placeholder="Client / Note rapide"
             />
           </div>
 
-          <button type="submit" className={`w-full text-white font-black py-6 md:py-10 rounded-2xl md:rounded-[2.5rem] text-lg md:text-2xl transition-all uppercase tracking-[0.2em] shadow-2xl active:scale-95 ${
-            formData.owner === Owner.LARBI ? 'bg-indigo-600 shadow-indigo-200' : 'bg-purple-600 shadow-purple-200'
-          }`}>
-            Sauvegarder le flux
-          </button>
+          <div className="pt-6 space-y-4">
+            <button type="submit" className={`w-full text-white font-black py-6 md:py-10 rounded-2xl md:rounded-[2.5rem] text-lg md:text-2xl transition-all uppercase tracking-[0.2em] shadow-2xl active:scale-95 ${
+              formData.owner === Owner.LARBI ? 'bg-indigo-600 shadow-indigo-100' : 'bg-purple-600 shadow-purple-100'
+            }`}>
+              {initialData ? 'Mettre à jour' : 'Sauvegarder'}
+            </button>
+
+            {initialData && onDelete && (
+              <button 
+                type="button" 
+                onClick={() => onDelete(initialData.id)}
+                className="w-full bg-rose-50 text-rose-600 font-black py-6 rounded-2xl text-xs md:text-sm uppercase tracking-[0.3em] active:bg-rose-100 border border-rose-100 flex items-center justify-center gap-2"
+              >
+                <Icons.Trash />
+                Supprimer la transaction
+              </button>
+            )}
+          </div>
         </form>
       </div>
     </div>
