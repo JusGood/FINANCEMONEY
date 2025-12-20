@@ -16,7 +16,6 @@ const App: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   const [activeView, setActiveView] = useState<Owner | 'Add'>(Owner.GLOBAL);
@@ -29,7 +28,8 @@ const App: React.FC = () => {
     key: localStorage.getItem('supabase_key') || ''
   });
 
-  const SQL_SETUP = `CREATE TABLE transactions (
+  const SQL_SETUP = `-- Script de création pour Larbi & Yassine
+CREATE TABLE IF NOT EXISTS transactions (
   id TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   date TEXT NOT NULL,
@@ -48,6 +48,7 @@ const App: React.FC = () => {
   "isSold" BOOLEAN DEFAULT FALSE
 );
 
+-- Désactive la sécurité pour que vous puissiez partager sans blocage
 ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
 
   useEffect(() => {
@@ -106,9 +107,11 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
     finally { setIsAuthenticating(false); }
   };
 
-  const isTableMissing = dbError?.toLowerCase().includes('relation "transactions" does not exist');
+  const isTableError = dbError?.toLowerCase().includes('relation "transactions" does not exist') || 
+                      dbError?.toLowerCase().includes('schema cache') || 
+                      dbError?.toLowerCase().includes('could not find the table');
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black animate-pulse text-xs uppercase tracking-widest">Initialisation...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black animate-pulse text-xs uppercase tracking-widest">Chargement...</div>;
 
   if (!user) {
     return (
@@ -116,7 +119,7 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
         <div className="max-w-md w-full bg-white/5 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/10 shadow-2xl">
           <div className="text-center mb-10">
             <h1 className="text-4xl font-black text-white tracking-tighter mb-2">FinanceFlow</h1>
-            <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em]">Synchro Larbi & Yassine</p>
+            <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em]">Vault Larbi & Yassine</p>
           </div>
 
           {authMode === 'config' ? (
@@ -128,7 +131,7 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
             }} className="space-y-4">
               <input type="text" placeholder="URL Supabase" className="w-full bg-white/10 border border-white/10 rounded-2xl p-4 text-white outline-none text-sm" value={dbConfig.url} onChange={e => setDbConfig({...dbConfig, url: e.target.value})} required />
               <input type="text" placeholder="Clé API Anon" className="w-full bg-white/10 border border-white/10 rounded-2xl p-4 text-white outline-none text-sm" value={dbConfig.key} onChange={e => setDbConfig({...dbConfig, key: e.target.value})} required />
-              <button type="submit" className="w-full bg-white text-slate-950 py-5 rounded-2xl font-black uppercase text-xs hover:bg-indigo-50 transition-all">Connecter le Cloud</button>
+              <button type="submit" className="w-full bg-white text-slate-950 py-5 rounded-2xl font-black uppercase text-xs hover:bg-indigo-50 transition-all">Lancer la Connexion</button>
             </form>
           ) : (
             <form onSubmit={handleAuth} className="space-y-4">
@@ -136,11 +139,12 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
                 <button type="button" onClick={() => setAuthMode('login')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${authMode === 'login' ? 'bg-white text-slate-950' : 'text-white/50'}`}>Connexion</button>
                 <button type="button" onClick={() => setAuthMode('signup')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${authMode === 'signup' ? 'bg-white text-slate-950' : 'text-white/50'}`}>Inscription</button>
               </div>
+              {authMode === 'signup' && <input type="text" placeholder="Prénom" className="w-full bg-white/10 border border-white/10 rounded-2xl p-4 text-white outline-none" value={name} onChange={e => setName(e.target.value)} required />}
               <input type="email" placeholder="Email" className="w-full bg-white/10 border border-white/10 rounded-2xl p-4 text-white outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
               <input type="password" placeholder="Mot de passe" className="w-full bg-white/10 border border-white/10 rounded-2xl p-4 text-white outline-none" value={password} onChange={e => setPassword(e.target.value)} required />
               {errorMsg && <p className="text-rose-500 text-[10px] font-black uppercase text-center">{errorMsg}</p>}
               <button type="submit" disabled={isAuthenticating} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl transition-all">
-                {isAuthenticating ? 'Chargement...' : 'Entrer dans le Vault'}
+                {isAuthenticating ? 'Vérification...' : 'Ouvrir le Vault'}
               </button>
             </form>
           )}
@@ -163,38 +167,36 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={loadTransactions} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-100 text-[10px] font-black uppercase tracking-widest transition-all">🔄 Actualiser</button>
+          <button onClick={loadTransactions} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-100 text-[10px] font-black uppercase tracking-widest transition-all">🔄 Synchroniser</button>
           <button onClick={() => DB.signOut().then(() => setUser(null))} className="px-8 py-4 bg-slate-100 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all">Quitter</button>
         </div>
       </div>
 
-      {isTableMissing ? (
+      {isTableError ? (
         <div className="mb-10 p-10 bg-rose-50 border-2 border-rose-200 rounded-[3rem] animate-in zoom-in duration-500">
           <div className="flex items-center gap-4 mb-6">
-            <span className="text-4xl">⚠️</span>
-            <h3 className="text-2xl font-black text-rose-900 uppercase">Configuration SQL Requise</h3>
+            <span className="text-4xl">🛠️</span>
+            <h3 className="text-2xl font-black text-rose-900 uppercase">Synchronisation Requise</h3>
           </div>
           <p className="text-rose-700 font-bold mb-6 text-sm">
-            La table "transactions" n'existe pas dans votre base Supabase. Copiez le code ci-dessous dans l'onglet "SQL Editor" de votre tableau de bord Supabase.
+            La table n'est pas encore prête. Copiez le code ci-dessous dans l'onglet <b>SQL Editor</b> de Supabase :
           </p>
-          <div className="bg-slate-900 p-6 rounded-2xl relative group">
+          <div className="bg-slate-900 p-6 rounded-2xl relative group mb-6">
             <pre className="text-indigo-300 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{SQL_SETUP}</pre>
             <button 
-              onClick={() => { navigator.clipboard.writeText(SQL_SETUP); alert("Code SQL copié !"); }}
+              onClick={() => { navigator.clipboard.writeText(SQL_SETUP); alert("Copié !"); }}
               className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
             >
-              Copier le SQL
+              Copier
             </button>
           </div>
-          <div className="mt-6 flex items-start gap-3 bg-white/50 p-4 rounded-2xl text-xs text-rose-800">
-            <span className="font-black italic">PROCÉDURE :</span>
-            <ol className="list-decimal ml-4 space-y-1 font-bold">
-              <li>Ouvrez votre projet Supabase</li>
-              <li>Allez dans <b>SQL Editor</b> (icône <code>{">_"}</code>)</li>
-              <li>Cliquez sur <b>+ New Query</b></li>
-              <li>Collez le code et cliquez sur <b>RUN</b></li>
-              <li>Revenez ici et cliquez sur "Actualiser" en haut</li>
-            </ol>
+          <div className="flex flex-col gap-4 bg-white/50 p-6 rounded-2xl border border-rose-100 text-[11px] font-bold text-rose-800">
+             <p className="uppercase tracking-widest opacity-60">Procédure :</p>
+             <ul className="list-disc ml-4 space-y-2">
+               <li>Allez sur <b>Supabase</b> &rarr; <b>SQL Editor</b> (icône {">_"})</li>
+               <li>Créez une <b>New Query</b>, collez le code et cliquez sur <b>Run</b></li>
+               <li>Si l'erreur persiste : Allez dans <b>Settings</b> &rarr; <b>API</b> &rarr; Cliquez sur <b>Reload Schema</b> en bas de page</li>
+             </ul>
           </div>
         </div>
       ) : dbError && (
@@ -204,7 +206,7 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
         </div>
       )}
 
-      {!isTableMissing && (
+      {!isTableError && (
         activeView === 'Add' ? (
           <TransactionForm 
             onAdd={async (d) => {
@@ -243,13 +245,22 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
             <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-2xl overflow-hidden">
               <div className="p-10 flex flex-col md:flex-row justify-between items-center gap-6 border-b border-slate-50">
                  <h4 className="text-2xl font-black italic">Journal Partagé</h4>
-                 <input type="text" placeholder="Rechercher un projet..." className="bg-slate-50 rounded-2xl px-6 py-4 text-sm font-bold outline-none w-80 focus:ring-2 focus:ring-indigo-100 transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                 <div className="relative w-80 group">
+                   <input 
+                     type="text" 
+                     placeholder="Chercher un projet..." 
+                     className="w-full bg-slate-50 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100 transition-all pl-12" 
+                     value={searchTerm} 
+                     onChange={e => setSearchTerm(e.target.value)} 
+                   />
+                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">🔍</div>
+                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                  <thead><tr className="bg-slate-50/50 text-slate-400 text-[10px] uppercase font-black tracking-widest"><th className="px-10 py-8">Date</th><th className="px-10 py-8">Qui</th><th className="px-10 py-8">Projet</th><th className="px-10 py-8 text-right">Montant</th><th className="px-10 py-8 text-center">Gestion</th></tr></thead>
+                  <thead><tr className="bg-slate-50/50 text-slate-400 text-[10px] uppercase font-black tracking-widest"><th className="px-10 py-8">Date</th><th className="px-10 py-8">Propriétaire</th><th className="px-10 py-8">Projet</th><th className="px-10 py-8 text-right">Montant</th><th className="px-10 py-8 text-center">Gestion</th></tr></thead>
                   <tbody className="divide-y divide-slate-50">
-                    {transactions.filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || t.projectName?.toLowerCase().includes(searchTerm.toLowerCase()))).map(t => (
+                    {transactions.filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category).toLowerCase().includes(searchTerm.toLowerCase()))).map(t => (
                       <tr key={t.id} className="hover:bg-slate-50/50 transition-all group">
                         <td className="px-10 py-8 text-xs font-black text-slate-400">{new Date(t.date).toLocaleDateString()}</td>
                         <td className="px-10 py-8"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${t.owner === Owner.LARBI ? 'bg-indigo-100 text-indigo-600' : 'bg-purple-100 text-purple-600'}`}>{t.owner}</span></td>
@@ -263,7 +274,6 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`;
                     ))}
                   </tbody>
                 </table>
-                {transactions.length === 0 && <div className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-xs italic">Aucune donnée synchronisée</div>}
               </div>
             </div>
           </div>
