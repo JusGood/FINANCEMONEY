@@ -37,17 +37,14 @@ export interface Transaction {
   isSold?: boolean; 
 }
 
-export interface ProjectSummary {
-  name: string;
-  clientName?: string;
-  totalSpent: number;
-  totalEarned: number;
-  potentialProfit: number;
-  totalExpectedReturn: number;
-  status: 'active' | 'completed';
-  lastActivity: string;
-  originalTransactionId?: string;
-  type: TransactionType;
+export interface Note {
+  id: string;
+  created_at?: string;
+  text: string;
+  deadline: string;
+  isCompleted: boolean;
+  owner: Owner;
+  priority: 'Basse' | 'Haute' | 'Urgent';
 }
 
 export const CATEGORIES = [
