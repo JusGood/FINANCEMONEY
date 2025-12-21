@@ -99,7 +99,7 @@ const App: React.FC = () => {
       ) : activeView === 'Focus' ? (
         <FocusMode owner={Owner.GLOBAL} />
       ) : (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="flex flex-col gap-10 animate-in fade-in duration-500 pb-10">
           <Dashboard 
             transactions={transactions} 
             ownerFilter={activeView as Owner} 
@@ -118,13 +118,14 @@ const App: React.FC = () => {
             }} 
           />
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+          {/* Journal Audit - Nettoyage structurel pour éviter l'overlap */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors relative z-0">
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-3 bg-slate-50/50 dark:bg-slate-800/30">
               <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-slate-400">Journal d'Audit</h4>
               <div className="relative group">
                 <input 
                   type="text" 
-                  placeholder="FILTRER LE VAULT..." 
+                  placeholder="FILTRER..." 
                   className="bg-white dark:bg-slate-950 rounded-lg px-3 py-1.5 text-[9px] font-black uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-indigo-500 border-none w-48 transition-all" 
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)} 

@@ -60,12 +60,17 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
     }
   }, [formData.productPrice, formData.feePercentage, formData.type]);
 
-  // LOGIQUE MULTIPLICATEUR (ex: x0.6)
+  // LOGIQUE MULTIPLICATEUR EN SUFFIXE (ex: "0.6x")
   const handleProfitChange = (val: string) => {
-    // Si l'utilisateur tape "x0.6" ou "*0.6"
-    if ((val.startsWith('x') || val.startsWith('*')) && val.length > 1) {
-      const multiplier = parseFloat(val.substring(1).replace(',', '.'));
-      const baseAmount = parseFloat(formData.type === TransactionType.CLIENT_ORDER ? formData.productPrice : formData.amount);
+    // Si l'utilisateur tape "x" ou "*" à la FIN de sa saisie
+    if (val.endsWith('x') || val.endsWith('*')) {
+      const numPart = val.slice(0, -1).replace(',', '.');
+      const multiplier = parseFloat(numPart);
+      const baseAmount = parseFloat(
+        formData.type === TransactionType.CLIENT_ORDER 
+          ? (formData.productPrice || '0') 
+          : (formData.amount || '0')
+      );
       
       if (!isNaN(multiplier) && !isNaN(baseAmount)) {
         const result = (baseAmount * multiplier).toFixed(2);
@@ -73,17 +78,23 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
         return;
       }
     }
+    
+    // Garde aussi la possibilité de taper x au début mais sans calcul auto destructif
     setFormData({ ...formData, expectedProfit: val });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isClientOrder = formData.type === TransactionType.CLIENT_ORDER;
+    
+    // Nettoyage final au cas où il reste un "x"
+    let finalProfit = formData.expectedProfit.replace('x', '').replace('*', '').replace(',', '.');
+    
     const transactionData = {
       amount: isClientOrder ? 0 : Math.abs(parseFloat(formData.amount || '0')),
       productPrice: isClientOrder ? parseFloat(formData.productPrice) : undefined,
       feePercentage: isClientOrder ? parseFloat(formData.feePercentage) : undefined,
-      expectedProfit: Math.abs(parseFloat(formData.expectedProfit || '0')),
+      expectedProfit: Math.abs(parseFloat(finalProfit || '0')),
       date: formData.date,
       category: formData.category,
       type: formData.type,
@@ -154,14 +165,14 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[8px] font-black uppercase text-slate-400 ml-2">
-                  Profit Net Estimé <span className="text-[7px] opacity-40 ml-1">(Tape x0.6 pour 60%)</span>
+                  Profit Net Estimé <span className="text-[7px] opacity-40 ml-1">(Ex: 0.6x)</span>
                 </label>
                 <input 
                   type="text" 
                   value={formData.expectedProfit} 
                   onChange={(e) => handleProfitChange(e.target.value)} 
                   className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm outline-none border border-emerald-100 dark:border-emerald-900/30" 
-                  placeholder="Montant ou x0.xx"
+                  placeholder="Tape 0.6x pour 60%"
                 />
               </div>
               <div className="space-y-1.5">
