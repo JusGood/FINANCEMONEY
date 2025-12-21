@@ -65,6 +65,32 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRevertSale = async (originalTxId: string) => {
+    if (confirm("Annuler l'encaissement ? Le revenu généré sera supprimé et l'article repassera en 'Ouvert'.")) {
+      try {
+        const originalTx = transactions.find(t => t.id === originalTxId);
+        if (!originalTx) return;
+
+        // 1. Remettre l'original en isSold: false
+        await DB.updateTransactionDB(originalTxId, { ...originalTx, isSold: false });
+
+        // 2. Trouver et supprimer les revenus associés (basés sur le tag REF dans la note)
+        const relatedIncome = transactions.find(t => 
+          t.type === TransactionType.INCOME && 
+          t.note?.includes(`[REF:${originalTxId}]`)
+        );
+
+        if (relatedIncome) {
+          await DB.deleteTransactionDB(relatedIncome.id);
+        }
+
+        await loadTransactions();
+      } catch (err) {
+        alert("Erreur lors de l'annulation");
+      }
+    }
+  };
+
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-[10px]">
       Chargement du Vault...
@@ -126,7 +152,7 @@ const App: React.FC = () => {
                  date: new Date().toISOString().split('T')[0],
                  amount: (tx.amount || 0) + (tx.expectedProfit || 0),
                  category: tx.category, type: TransactionType.INCOME, account: tx.account,
-                 owner: tx.owner, note: `Vente: ${tx.projectName}`, isSold: true, method: tx.method
+                 owner: tx.owner, note: `Vente [REF:${tx.id}]: ${tx.projectName}`, isSold: true, method: tx.method
                });
                await loadTransactions();
             }} 
@@ -175,9 +201,20 @@ const App: React.FC = () => {
                       </td>
                       <td className="px-5 py-3"><span className="text-[9px] font-black uppercase text-indigo-500 dark:text-indigo-400">{t.owner}</span></td>
                       <td className="px-5 py-3">
-                        <span className={`text-[7px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${t.isSold ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                          {t.isSold ? 'CLOS' : 'OUVERT'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                           <span className={`text-[7px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${t.isSold ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                            {t.isSold ? 'CLOS' : 'OUVERT'}
+                          </span>
+                          {t.isSold && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && (
+                            <button 
+                              onClick={() => handleRevertSale(t.id)} 
+                              title="Annuler l'encaissement"
+                              className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity hover:scale-125"
+                            >
+                              ↩️
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className={`px-5 py-3 text-right font-black tabular-nums text-[11px] ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {t.amount.toLocaleString()}€

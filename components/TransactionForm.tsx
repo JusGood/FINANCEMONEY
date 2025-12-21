@@ -25,6 +25,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     projectName: '',
     clientName: '',
     isForecast: false,
+    isSold: false,
     method: 'Standard' as OperationMethod
   });
 
@@ -44,6 +45,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
         projectName: initialData.projectName || '',
         clientName: initialData.clientName || '',
         isForecast: !!initialData.isForecast,
+        isSold: !!initialData.isSold,
         method: initialData.method || 'Standard'
       });
     }
@@ -62,7 +64,6 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
   // LOGIQUE MULTIPLICATEUR EN SUFFIXE (ex: "0.6x")
   const handleProfitChange = (val: string) => {
-    // Si l'utilisateur ajoute "x" ou "*" à la FIN de sa saisie
     if (val.length > 1 && (val.endsWith('x') || val.endsWith('*'))) {
       const numPart = val.slice(0, -1).replace(',', '.');
       const multiplier = parseFloat(numPart);
@@ -85,7 +86,6 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     e.preventDefault();
     const isClientOrder = formData.type === TransactionType.CLIENT_ORDER;
     
-    // Nettoyage final du profit (on enlève les x accidentels)
     let finalProfit = formData.expectedProfit.toString().replace(/[x*]/g, '').replace(',', '.');
     
     const transactionData = {
@@ -102,7 +102,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
       projectName: formData.projectName.trim() || undefined,
       clientName: formData.clientName.trim() || undefined,
       isForecast: formData.isForecast,
-      isSold: initialData ? initialData.isSold : false,
+      isSold: formData.isSold,
       method: formData.method
     };
 
@@ -160,29 +160,53 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           </div>
 
           {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[8px] font-black uppercase text-slate-400 ml-2">
-                  Profit Net Estimé <span className="text-[7px] opacity-40 ml-1">(Ex: 0.6x)</span>
-                </label>
-                <input 
-                  type="text" 
-                  value={formData.expectedProfit} 
-                  onChange={(e) => handleProfitChange(e.target.value)} 
-                  className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm outline-none border border-emerald-100 dark:border-emerald-900/30" 
-                  placeholder="Tape 0.6x"
-                />
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black uppercase text-slate-400 ml-2">
+                    Profit Net Estimé <span className="text-[7px] opacity-40 ml-1">(Ex: 0.6x)</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    value={formData.expectedProfit} 
+                    onChange={(e) => handleProfitChange(e.target.value)} 
+                    className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm outline-none border border-emerald-100 dark:border-emerald-900/30" 
+                    placeholder="Tape 0.6x"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black uppercase text-slate-400 ml-2">Méthode</label>
+                  <select value={formData.method} onChange={(e) => setFormData({...formData, method: e.target.value as OperationMethod})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs outline-none border-none">
+                    <option value="Standard">Standard</option>
+                    <option value="FTID">FTID</option>
+                    <option value="DNA">DNA</option>
+                    <option value="EB">EB</option>
+                    <option value="LIT">LIT</option>
+                  </select>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[8px] font-black uppercase text-slate-400 ml-2">Méthode</label>
-                <select value={formData.method} onChange={(e) => setFormData({...formData, method: e.target.value as OperationMethod})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs outline-none border-none">
-                  <option value="Standard">Standard</option>
-                  <option value="FTID">FTID</option>
-                  <option value="DNA">DNA</option>
-                  <option value="EB">EB</option>
-                  <option value="LIT">LIT</option>
-                </select>
-              </div>
+
+              {initialData && (
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                  <span className="text-[9px] font-black uppercase text-slate-400">Statut de l'opération</span>
+                  <div className="flex gap-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData({...formData, isSold: false})}
+                      className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${!formData.isSold ? 'bg-amber-500 text-white' : 'text-slate-400'}`}
+                    >
+                      Ouvert
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData({...formData, isSold: true})}
+                      className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${formData.isSold ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}
+                    >
+                      Soldé / Clos
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
