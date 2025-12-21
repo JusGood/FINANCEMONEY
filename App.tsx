@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [activeView, setActiveView] = useState<Owner | 'Add' | 'Focus'>(Owner.GLOBAL);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dbError, setDbError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -47,8 +48,28 @@ const App: React.FC = () => {
     try {
       const data = await DB.getTransactions();
       setTransactions(data);
-    } catch (err) {
-      console.error("Erreur de chargement", err);
+      setDbError(null);
+    } catch (err: any) {
+      if (err.sql) {
+        setDbError(`Mise à jour de la base de données requise. Exécutez ce code dans le SQL Editor de Supabase :\n\n${err.sql}`);
+      } else {
+        console.error("Erreur de chargement", err);
+      }
+    }
+  };
+
+  const handleAddTransaction = async (d: Omit<Transaction, 'id'>) => {
+    try {
+      await DB.saveTransaction({...d, id: Math.random().toString(36).substr(2, 9)});
+      await loadTransactions();
+      setActiveView(d.owner);
+    } catch (err: any) {
+      if (err.sql) {
+        alert("Erreur Base de données : Colonne manquante. Regardez le message d'erreur en haut du journal.");
+        setDbError(`Mise à jour de la base de données requise. Exécutez ce code dans le SQL Editor de Supabase :\n\n${err.sql}`);
+      } else {
+        alert("Erreur lors de l'enregistrement");
+      }
     }
   };
 
@@ -120,11 +141,7 @@ const App: React.FC = () => {
     <Layout activeView={activeView} onNavigate={(v) => { setEditingTransaction(null); setActiveView(v); }}>
       {activeView === 'Add' ? (
         <TransactionForm 
-          onAdd={async (d) => {
-            await DB.saveTransaction({...d, id: Math.random().toString(36).substr(2, 9)});
-            await loadTransactions();
-            setActiveView(d.owner);
-          }} 
+          onAdd={handleAddTransaction} 
           onUpdate={async (id, d) => {
             await DB.updateTransactionDB(id, d);
             await loadTransactions();
@@ -162,6 +179,15 @@ const App: React.FC = () => {
             }} 
           />
 
+          {dbError && (
+            <div className="bg-rose-500/10 border border-rose-500/50 p-6 rounded-3xl text-rose-500 mb-8">
+               <h5 className="font-black uppercase text-xs tracking-widest mb-2">⚠️ MISE À JOUR VAULT REQUISE</h5>
+               <pre className="text-[10px] bg-black/20 p-4 rounded-xl whitespace-pre-wrap font-mono select-all">
+                 {dbError}
+               </pre>
+            </div>
+          )}
+
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors relative z-0">
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
               <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal d'Audit Financier</h4>
@@ -193,11 +219,10 @@ const App: React.FC = () => {
                     .map(t => {
                       const displayAmount = t.type === TransactionType.CLIENT_ORDER ? (t.expectedProfit || 0) : t.amount;
                       
-                      // Déterminer si c'est positif ou négatif selon la vue
                       let isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
                       if (t.type === TransactionType.TRANSFER) {
-                        if (activeView === Owner.GLOBAL) isPositive = true; // Neutre
-                        else isPositive = t.toOwner === activeView; // Positif si on reçoit
+                        if (activeView === Owner.GLOBAL) isPositive = true; 
+                        else isPositive = t.toOwner === activeView; 
                       }
                       
                       const isActuallyReceived = t.isSold || t.type === TransactionType.EXPENSE || t.type === TransactionType.INITIAL_BALANCE || t.type === TransactionType.TRANSFER;

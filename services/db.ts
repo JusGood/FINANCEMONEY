@@ -22,12 +22,22 @@ export const initDB = () => {
 export const getSupabase = () => supabase;
 
 const handleDBError = (error: any) => {
-  // Détection spécifique de la colonne 'method' manquante
-  if (error.message?.includes("column \"method\"") || error.details?.includes("column \"method\"")) {
+  const msg = error.message || "";
+  const details = error.details || "";
+  
+  // Détection des colonnes manquantes suite aux mises à jour
+  if (msg.includes("column \"method\"") || details.includes("column \"method\"")) {
     const err = new Error("MISSING_COLUMN_METHOD");
-    (err as any).sql = "ALTER TABLE transactions ADD COLUMN method text;";
+    (err as any).sql = "ALTER TABLE transactions ADD COLUMN method text DEFAULT 'Standard';";
     throw err;
   }
+  
+  if (msg.includes("column \"toOwner\"") || details.includes("column \"toOwner\"")) {
+    const err = new Error("MISSING_COLUMN_TOOWNER");
+    (err as any).sql = "ALTER TABLE transactions ADD COLUMN \"toOwner\" text;";
+    throw err;
+  }
+
   throw new Error(error.message || "Erreur de base de données inconnue");
 };
 

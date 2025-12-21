@@ -53,6 +53,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   const currentCash = stats.initial + stats.income - stats.expense - stats.invested;
 
   const projects = useMemo(() => {
+    // On n'affiche que les attentes d'encaissement dont on est le propriétaire (l'agent)
     return filtered
       .filter(t => t.owner === ownerFilter && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) && !t.isSold)
       .map(t => ({
@@ -81,6 +82,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       {/* Top Bar Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group">
+          {/* Correction : pointer-events-none et z-index bas pour le logo de fond */}
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none z-0">
              <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
           </div>
@@ -91,10 +93,11 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
               <button 
                 type="button"
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   setShowDetails(!showDetails);
                 }}
-                className="text-[10px] font-black bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-all border border-white/10 shadow-lg active:scale-95"
+                className="text-[10px] font-black bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-all border border-white/10 shadow-lg active:scale-95 cursor-pointer"
               >
                 {showDetails ? 'MASQUER DÉTAILS' : 'VOIR PROVENANCE'}
               </button>
