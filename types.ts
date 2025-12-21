@@ -41,17 +41,20 @@ export interface Note {
   id: string;
   created_at?: string;
   text: string;
-  deadline: string;
+  deadline: string; // ISO string avec ou sans heure précise
   isCompleted: boolean;
   owner: Owner;
   priority: 'Basse' | 'Haute' | 'Urgent';
 }
 
 export const CATEGORIES = [
+  'Vente Directe',
+  'Flip Stock',
+  'Service',
   'FTID',
   'DNA',
   'EB',
   'LIT',
-  'Dépense',
+  'Dépense Courante',
   'Solde Initial'
 ];
