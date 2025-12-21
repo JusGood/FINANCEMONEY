@@ -65,9 +65,9 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         <div className="xl:col-span-8 group relative rounded-[3rem] md:rounded-[4rem] overflow-hidden shadow-2xl transition-all duration-700 hover:shadow-indigo-200/20">
           <div className={`absolute inset-0 transition-all duration-1000 ${
-            ownerFilter === Owner.LARBI ? 'bg-gradient-to-br from-indigo-700 via-blue-800 to-indigo-950' : 
-            ownerFilter === Owner.YASSINE ? 'bg-gradient-to-br from-purple-700 via-fuchsia-800 to-purple-950' : 
-            'bg-gradient-to-br from-slate-900 via-slate-800 to-black'
+            ownerFilter === Owner.LARBI ? 'bg-gradient-to-br from-indigo-700 via-blue-800 to-indigo-950 dark:from-indigo-900 dark:to-slate-900' : 
+            ownerFilter === Owner.YASSINE ? 'bg-gradient-to-br from-purple-700 via-fuchsia-800 to-purple-950 dark:from-purple-900 dark:to-slate-900' : 
+            'bg-gradient-to-br from-slate-900 via-slate-800 to-black dark:from-slate-800 dark:to-black'
           }`}></div>
           
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
@@ -103,28 +103,28 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         </div>
 
         {/* AI Insight Sidebar */}
-        <div className="xl:col-span-4 bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-2xl flex flex-col relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-50 -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+        <div className="xl:col-span-4 bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl flex flex-col relative overflow-hidden group transition-colors duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/10 rounded-full blur-3xl opacity-50 -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
           
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-2xl">
+              <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center shadow-2xl">
                 <span className="text-white text-xs font-black tracking-tighter">VAULT</span>
               </div>
-              <h3 className="text-xl font-black tracking-tighter uppercase text-slate-900">IA ANALYTICS</h3>
+              <h3 className="text-xl font-black tracking-tighter uppercase text-slate-900 dark:text-white">IA ANALYTICS</h3>
             </div>
             
             <div className="flex-1 min-h-[220px]">
               {aiReport ? (
-                <div className="prose prose-slate">
-                  <div className="whitespace-pre-wrap text-slate-700 font-bold leading-relaxed italic text-sm md:text-base border-l-4 border-indigo-600 pl-8 py-2 animate-in fade-in slide-in-from-left-4 duration-500">
+                <div className="prose prose-slate dark:prose-invert">
+                  <div className="whitespace-pre-wrap text-slate-700 dark:text-slate-300 font-bold leading-relaxed italic text-sm md:text-base border-l-4 border-indigo-600 pl-8 py-2 animate-in fade-in slide-in-from-left-4 duration-500">
                     "{aiReport}"
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-48 text-center space-y-4 opacity-20">
-                  <div className="w-16 h-1 bg-slate-100 rounded-full animate-pulse"></div>
-                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] italic">Analyse du marché en attente...</p>
+                  <div className="w-16 h-1 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse"></div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.4em] italic">Analyse du marché en attente...</p>
                 </div>
               )}
             </div>
@@ -133,7 +133,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
               onClick={fetchAiReport}
               disabled={loadingReport}
               className={`w-full py-6 mt-10 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.4em] transition-all shadow-2xl ${
-                loadingReport ? 'bg-slate-100 text-slate-300' : 'bg-slate-900 text-white hover:bg-indigo-700 hover:-translate-y-1 active:scale-95'
+                loadingReport ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600' : 'bg-slate-900 dark:bg-indigo-600 text-white hover:bg-indigo-700 dark:hover:bg-indigo-500 hover:-translate-y-1 active:scale-95'
               }`}
             >
               {loadingReport ? 'CALCUL EN COURS...' : 'AUDIT DE FORTUNE'}
@@ -149,46 +149,46 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
              <div className="flex items-center gap-4">
                 <div className="w-2 h-12 bg-indigo-600 rounded-full"></div>
                 <div>
-                  <h4 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Flips en Cours</h4>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-3">{projects.length} opérations de terrain actives</p>
+                  <h4 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">Flips en Cours</h4>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mt-3">{projects.length} opérations de terrain actives</p>
                 </div>
              </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {projects.map(p => (
-              <div key={p.originalTransactionId} className="group bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 flex flex-col justify-between overflow-hidden relative border-b-8 border-b-slate-50 hover:border-b-indigo-100">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-indigo-50 transition-colors"></div>
+              <div key={p.originalTransactionId} className="group bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 flex flex-col justify-between overflow-hidden relative border-b-8 border-b-slate-50 dark:border-b-slate-800 hover:border-b-indigo-100 dark:hover:border-b-indigo-900">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 dark:bg-slate-800/30 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/20 transition-colors"></div>
                 
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-8">
                     <div className="flex flex-col">
-                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${p.type === TransactionType.CLIENT_ORDER ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>
+                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${p.type === TransactionType.CLIENT_ORDER ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600'}`}>
                          {p.type === TransactionType.CLIENT_ORDER ? '👤' : '📦'}
                        </div>
                        {p.method && p.method !== 'Standard' && (
-                         <span className="mt-3 text-[9px] font-black uppercase text-indigo-500 bg-indigo-50 px-3 py-1 rounded-lg w-fit tracking-widest">{p.method}</span>
+                         <span className="mt-3 text-[9px] font-black uppercase text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 px-3 py-1 rounded-lg w-fit tracking-widest">{p.method}</span>
                        )}
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Target Net</p>
-                      <p className="text-3xl font-black text-emerald-600 tabular-nums">+{p.potentialProfit}€</p>
+                      <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">+{p.potentialProfit}€</p>
                     </div>
                   </div>
-                  <h5 className="text-2xl font-black text-slate-900 truncate leading-tight uppercase tracking-tighter mb-4">{p.name}</h5>
+                  <h5 className="text-2xl font-black text-slate-900 dark:text-white truncate leading-tight uppercase tracking-tighter mb-4">{p.name}</h5>
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`w-2 h-2 rounded-full ${p.owner === Owner.LARBI ? 'bg-indigo-600' : 'bg-purple-600'}`}></div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">{p.owner}</span>
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">{p.owner}</span>
                   </div>
                 </div>
                 
-                <div className="mt-12 pt-8 border-t border-slate-50 relative z-10">
-                  <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 mb-8 tabular-nums tracking-widest">
+                <div className="mt-12 pt-8 border-t border-slate-50 dark:border-slate-800 relative z-10">
+                  <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-8 tabular-nums tracking-widest">
                     <span>Mise: {p.totalSpent}€</span>
-                    <span className="text-slate-900">Retour: {p.totalExpectedReturn}€</span>
+                    <span className="text-slate-900 dark:text-white">Retour: {p.totalExpectedReturn}€</span>
                   </div>
                   <button 
                     onClick={() => onConfirmSale(p.originalTransactionId!)}
-                    className="w-full bg-slate-900 text-white py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-emerald-600 active:scale-95 transition-all"
+                    className="w-full bg-slate-900 dark:bg-slate-800 text-white py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-emerald-600 active:scale-95 transition-all border border-slate-100/10"
                   >
                     CAISSER LA VENTE
                   </button>
@@ -201,37 +201,37 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
       {/* Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 bg-white p-12 rounded-[4rem] border border-slate-100 shadow-2xl overflow-hidden relative">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-12 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden relative transition-colors duration-300">
           <div className="absolute top-0 right-0 p-8">
              <div className="flex gap-4">
                 <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-indigo-600 shadow-sm shadow-indigo-200"></div>
-                   <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Réel</span>
+                   <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Réel</span>
                 </div>
                 <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></div>
-                   <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Projeté</span>
+                   <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Projeté</span>
                 </div>
              </div>
           </div>
           <div className="mb-12">
-            <h4 className="text-3xl font-black tracking-tighter uppercase text-slate-900 italic">Evolution du Capital</h4>
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-2">Projection vers l'objectif millionnaire</p>
+            <h4 className="text-3xl font-black tracking-tighter uppercase text-slate-900 dark:text-white italic">Evolution du Capital</h4>
+            <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-[0.3em] mt-2">Projection vers l'objectif millionnaire</p>
           </div>
           <div className="h-[400px] w-full">
             <BalanceTrendChart transactions={filtered} />
           </div>
         </div>
         
-        <div className="lg:col-span-4 bg-white p-12 rounded-[4rem] border border-slate-100 shadow-2xl flex flex-col items-center justify-between">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-12 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-2xl flex flex-col items-center justify-between transition-colors duration-300">
           <div className="w-full text-left mb-8">
-            <h4 className="text-3xl font-black tracking-tighter uppercase text-slate-900 italic">Segments</h4>
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-2">Répartition Stratégique</p>
+            <h4 className="text-3xl font-black tracking-tighter uppercase text-slate-900 dark:text-white italic">Segments</h4>
+            <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-[0.3em] mt-2">Répartition Stratégique</p>
           </div>
           <div className="w-full flex justify-center py-6">
             <CategoryPieChart transactions={filtered} />
           </div>
-          <div className="w-full mt-8 p-8 bg-slate-950 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+          <div className="w-full mt-8 p-8 bg-slate-950 dark:bg-black/50 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
              <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-transparent"></div>
              <p className="relative z-10 text-[10px] font-black uppercase text-white/30 text-center tracking-[0.3em] mb-6 italic">Statistiques du Vault</p>
              <div className="relative z-10 flex justify-around">

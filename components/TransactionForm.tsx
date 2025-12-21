@@ -89,10 +89,10 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
   return (
     <div className="max-w-4xl mx-auto py-4 md:py-12 md:px-6">
-      <div className="bg-white p-6 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 shadow-2xl relative animate-in fade-in zoom-in-95 duration-500">
+      <div className="bg-white dark:bg-slate-900 p-6 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-2xl relative animate-in fade-in zoom-in-95 duration-500 transition-colors">
         <div className="flex items-center justify-between mb-8">
-           <button onClick={onCancel} type="button" className="text-slate-400 font-black text-[10px] uppercase hover:text-slate-900 transition-colors">← Retour</button>
-           <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900">
+           <button onClick={onCancel} type="button" className="text-slate-400 dark:text-slate-500 font-black text-[10px] uppercase hover:text-slate-900 dark:hover:text-white transition-colors">← Retour</button>
+           <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">
             {initialData ? 'Editer l\'Opération' : 'Nouveau Flux'}
           </h3>
           <div className="w-10"></div>
@@ -100,9 +100,9 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
         
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* SÉLECTEUR PROPRIÉTAIRE */}
-          <div className="bg-slate-50 p-1.5 rounded-2xl flex gap-1.5">
+          <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1.5">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
-              <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${formData.owner === o ? 'bg-slate-900 text-white shadow-lg scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}>
+              <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${formData.owner === o ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg scale-[1.02]' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
                 {o}
               </button>
             ))}
@@ -110,8 +110,8 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Type d'opération</label>
-              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-5 bg-slate-50 rounded-2xl font-black text-xs appearance-none cursor-pointer hover:bg-slate-100 transition-colors border-none outline-none">
+              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest">Type d'opération</label>
+              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs appearance-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border-none outline-none">
                 <option value={TransactionType.CLIENT_ORDER}>Commande Client 👤</option>
                 <option value={TransactionType.INVESTMENT}>Achat Flip / Stock 📦</option>
                 <option value={TransactionType.INCOME}>Revenu Direct 💰</option>
@@ -119,15 +119,15 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Date</label>
-              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full p-5 bg-slate-50 rounded-2xl font-black text-xs uppercase border-none outline-none" />
+              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest">Date</label>
+              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase border-none outline-none" />
             </div>
           </div>
 
           {/* SÉLECTEUR DE MÉTHODE (FTID, DNA, etc.) */}
           {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Méthode de Récupération / Stratégie</label>
+              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest">Méthode de Récupération / Stratégie</label>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                 {methods.map(m => (
                   <button
@@ -136,8 +136,8 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
                     onClick={() => setFormData({...formData, method: m})}
                     className={`py-4 rounded-2xl font-black text-[10px] uppercase transition-all border-2 ${
                       formData.method === m 
-                        ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-sm' 
-                        : 'border-slate-50 bg-slate-50 text-slate-400 hover:bg-slate-100'
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                        : 'border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
                   >
                     {m}
@@ -147,21 +147,21 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             </div>
           )}
 
-          <div className="p-10 bg-slate-50 rounded-[3rem] space-y-3 border border-slate-100 shadow-inner">
-            <p className="text-[10px] font-black uppercase text-slate-400 text-center tracking-[0.3em]">
+          <div className="p-10 bg-slate-50 dark:bg-slate-800 rounded-[3rem] space-y-3 border border-slate-100 dark:border-slate-700 shadow-inner transition-colors">
+            <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 text-center tracking-[0.3em]">
               {formData.type === TransactionType.CLIENT_ORDER ? 'PRIX DE VENTE (€)' : 'MONTANT INVESTI (€)'}
             </p>
             <input
               type="number" required step="0.01" 
               value={formData.type === TransactionType.CLIENT_ORDER ? formData.productPrice : formData.amount}
               onChange={(e) => setFormData({...formData, [formData.type === TransactionType.CLIENT_ORDER ? 'productPrice' : 'amount']: e.target.value})}
-              className="w-full bg-transparent text-center text-6xl font-black text-slate-900 outline-none tabular-nums"
+              className="w-full bg-transparent text-center text-6xl font-black text-slate-900 dark:text-white outline-none tabular-nums"
               placeholder="0.00"
             />
           </div>
 
           {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
-            <div className="bg-emerald-500 p-8 rounded-[3rem] shadow-xl shadow-emerald-100 flex items-center justify-between group transition-all hover:scale-[1.01]">
+            <div className="bg-emerald-500 p-8 rounded-[3rem] shadow-xl shadow-emerald-100 dark:shadow-none flex items-center justify-between group transition-all hover:scale-[1.01]">
               <div className="flex flex-col">
                 <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Profit Cible Prévu</p>
                 <div className="flex items-baseline gap-2">
@@ -181,17 +181,17 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Nom de l'Opération</label>
-              <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-5 bg-slate-50 rounded-2xl font-black text-xs uppercase border-none outline-none focus:ring-2 focus:ring-indigo-100 transition-all" placeholder="Ex: STOCK IPHONE 15 PRO" />
+              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4">Nom de l'Opération</label>
+              <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase border-none outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder:opacity-30" placeholder="Ex: STOCK IPHONE 15 PRO" />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Client ou Référence</label>
-              <input type="text" value={formData.clientName} onChange={(e) => setFormData({...formData, clientName: e.target.value})} className="w-full p-5 bg-slate-50 rounded-2xl font-black text-xs uppercase border-none outline-none focus:ring-2 focus:ring-indigo-100 transition-all" placeholder="Ex: @vendeur_telecom" />
+              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4">Client ou Référence</label>
+              <input type="text" value={formData.clientName} onChange={(e) => setFormData({...formData, clientName: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase border-none outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder:opacity-30" placeholder="Ex: @vendeur_telecom" />
             </div>
           </div>
 
           <div className="pt-8 flex flex-col gap-4">
-            <button type="submit" className="w-full bg-slate-900 text-white font-black py-7 rounded-[2.5rem] text-[11px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-600 transition-all active:scale-95">
+            <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-7 rounded-[2.5rem] text-[11px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all active:scale-95">
               {initialData ? 'Enregistrer les Modifications' : 'Lancer l\'Opération Financière'}
             </button>
             
@@ -199,7 +199,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
               <button 
                 type="button" 
                 onClick={() => onDelete(initialData.id)}
-                className="w-full bg-white text-rose-500 font-black py-4 rounded-xl text-[10px] uppercase tracking-widest border border-rose-100 hover:bg-rose-50 transition-all"
+                className="w-full bg-white dark:bg-slate-800 text-rose-500 font-black py-4 rounded-xl text-[10px] uppercase tracking-widest border border-rose-100 dark:border-rose-900/30 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
               >
                 Supprimer de l'Historique
               </button>
