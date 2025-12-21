@@ -19,6 +19,8 @@ export enum TransactionType {
   INITIAL_BALANCE = 'Solde Initial' 
 }
 
+export type OperationMethod = 'FTID' | 'DNA' | 'EB' | 'LIT' | 'Standard';
+
 export interface Transaction {
   id: string;
   date: string;
@@ -35,13 +37,14 @@ export interface Transaction {
   clientName?: string;
   isForecast?: boolean;
   isSold?: boolean; 
+  method?: OperationMethod;
 }
 
 export interface Note {
   id: string;
   created_at?: string;
   text: string;
-  deadline: string; // ISO string avec ou sans heure précise
+  deadline: string; 
   isCompleted: boolean;
   owner: Owner;
   priority: 'Basse' | 'Haute' | 'Urgent';

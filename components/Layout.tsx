@@ -48,7 +48,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
       {/* Sidebar - Desktop */}
       <aside className="w-72 bg-white border-r border-gray-200 hidden md:flex flex-col">
         <div className="p-8">
-          <h1 className="text-2xl font-black text-indigo-600 tracking-tighter italic">FinanceFlow <span className="text-slate-400">AI</span></h1>
+          <h1 className="text-xl font-black text-indigo-600 tracking-tighter uppercase leading-tight italic">
+            MILLIONAIRE<br/>
+            <span className="text-slate-900 not-italic">EN 2027</span>
+          </h1>
         </div>
         
         <nav className="flex-1 px-4 space-y-2">
@@ -56,17 +59,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             <button
               key={item.id}
               onClick={() => onNavigate(item.id as any)}
-              className={`w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-200 group ${
+              className={`w-full flex items-center px-4 py-4 rounded-2xl transition-all duration-200 group ${
                 activeView === item.id 
                   ? 'bg-slate-900 text-white font-bold shadow-xl translate-x-1' 
                   : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600'
               }`}
             >
-              {/* Conteneur d'icône à largeur fixe pour l'alignement vertical parfait */}
-              <div className="w-8 flex items-center justify-center flex-shrink-0 transition-transform group-active:scale-90">
+              {/* Conteneur d'icône fixe pour l'alignement vertical parfait */}
+              <div className="w-10 flex items-center justify-center flex-shrink-0 transition-transform group-active:scale-90">
                 {item.icon}
               </div>
-              <span className="text-sm font-bold tracking-tight">{item.label}</span>
+              <span className="text-sm font-bold tracking-tight ml-2">{item.label}</span>
             </button>
           ))}
         </nav>
