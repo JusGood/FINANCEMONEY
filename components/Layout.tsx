@@ -11,11 +11,36 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => {
   const navItems = [
-    { id: Owner.GLOBAL, label: 'Global', icon: <Icons.Dashboard />, mobileLabel: 'Dashboard' },
-    { id: 'Focus', label: 'Objectifs', icon: <span className="text-lg">🎯</span>, mobileLabel: 'Focus' },
-    { id: Owner.LARBI, label: 'Espace Larbi', icon: <div className="w-5 h-5 flex items-center justify-center font-black text-[10px] bg-indigo-100 text-indigo-600 rounded-lg">L</div>, mobileLabel: 'Larbi' },
-    { id: Owner.YASSINE, label: 'Espace Yassine', icon: <div className="w-5 h-5 flex items-center justify-center font-black text-[10px] bg-purple-100 text-purple-600 rounded-lg">Y</div>, mobileLabel: 'Yassine' },
-    { id: 'Add', label: 'Ajouter', icon: <Icons.Plus />, mobileLabel: 'Plus' },
+    { 
+      id: Owner.GLOBAL, 
+      label: 'Global', 
+      icon: <Icons.Dashboard />, 
+      mobileLabel: 'Dashboard' 
+    },
+    { 
+      id: 'Focus', 
+      label: 'Objectifs', 
+      icon: <span className="text-xl">🎯</span>, 
+      mobileLabel: 'Focus' 
+    },
+    { 
+      id: Owner.LARBI, 
+      label: 'Espace Larbi', 
+      icon: <div className="w-6 h-6 flex items-center justify-center font-black text-[11px] bg-indigo-100 text-indigo-600 rounded-lg shadow-sm">L</div>, 
+      mobileLabel: 'Larbi' 
+    },
+    { 
+      id: Owner.YASSINE, 
+      label: 'Espace Yassine', 
+      icon: <div className="w-6 h-6 flex items-center justify-center font-black text-[11px] bg-purple-100 text-purple-600 rounded-lg shadow-sm">Y</div>, 
+      mobileLabel: 'Yassine' 
+    },
+    { 
+      id: 'Add', 
+      label: 'Ajouter', 
+      icon: <div className="p-1 bg-slate-100 rounded-md"><Icons.Plus /></div>, 
+      mobileLabel: 'Plus' 
+    },
   ];
 
   return (
@@ -31,22 +56,25 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             <button
               key={item.id}
               onClick={() => onNavigate(item.id as any)}
-              className={`w-full flex items-center space-x-3 px-6 py-4 rounded-2xl transition-all duration-200 ${
+              className={`w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-200 group ${
                 activeView === item.id 
-                  ? 'bg-slate-900 text-white font-bold shadow-xl' 
+                  ? 'bg-slate-900 text-white font-bold shadow-xl translate-x-1' 
                   : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600'
               }`}
             >
-              {item.icon}
-              <span className="text-sm font-bold">{item.label}</span>
+              {/* Conteneur d'icône à largeur fixe pour l'alignement vertical parfait */}
+              <div className="w-8 flex items-center justify-center flex-shrink-0 transition-transform group-active:scale-90">
+                {item.icon}
+              </div>
+              <span className="text-sm font-bold tracking-tight">{item.label}</span>
             </button>
           ))}
         </nav>
 
         <div className="p-6">
-          <div className="bg-indigo-600 rounded-[2rem] p-6 text-white text-center">
+          <div className="bg-indigo-600 rounded-[2rem] p-6 text-white text-center shadow-lg shadow-indigo-100">
             <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Rappel Focus</p>
-            <p className="text-xs mt-2 font-bold leading-tight">Une tâche terminée est un pas vers la fortune.</p>
+            <p className="text-xs mt-2 font-bold leading-tight italic">"Une tâche terminée est un pas vers la fortune."</p>
           </div>
         </div>
       </aside>
@@ -57,8 +85,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             {navItems.find(n => n.id === activeView)?.label || 'Chargement...'}
           </h2>
           <div className="flex -space-x-1">
-             <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] text-white font-black border-2 border-white">L</div>
-             <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-[10px] text-white font-black border-2 border-white">Y</div>
+             <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] text-white font-black border-2 border-white shadow-sm">L</div>
+             <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-[10px] text-white font-black border-2 border-white shadow-sm">Y</div>
           </div>
         </header>
 
@@ -75,10 +103,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
               key={item.id}
               onClick={() => onNavigate(item.id as any)}
               className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
-                activeView === item.id ? 'text-indigo-600' : 'text-slate-400'
+                activeView === item.id ? 'text-indigo-600 scale-105' : 'text-slate-400'
               }`}
             >
-              <div className={`${activeView === item.id ? 'scale-110' : 'scale-100'}`}>
+              <div className="w-8 h-8 flex items-center justify-center">
                 {item.icon}
               </div>
               <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">{item.mobileLabel}</span>
