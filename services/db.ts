@@ -21,40 +21,31 @@ export const initDB = () => {
 
 export const getSupabase = () => supabase;
 
-export const getProjectId = () => {
-  const url = localStorage.getItem('supabase_url');
-  if (!url) return 'Non connecté';
-  return url.split('//')[1]?.split('.')[0] || 'Inconnu';
-};
-
-export const signIn = async (email: string, pass: string) => {
-  if (!supabase) return { error: { message: "Base de données non configurée." } };
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-  return { data, error };
-};
-
-export const signOut = async () => {
-  if (supabase) await supabase.auth.signOut();
+const handleDBError = (error: any) => {
+  if (error.message?.includes("column \"method\" of relation \"transactions\" does not exist")) {
+    throw new Error("ALERTE : La colonne 'method' manque dans votre table Supabase. Allez dans SQL Editor et lancez : ALTER TABLE transactions ADD COLUMN method text;");
+  }
+  throw new Error(error.message);
 };
 
 // --- TRANSACTIONS ---
 export const getTransactions = async (): Promise<Transaction[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
-  if (error) throw new Error(error.message);
+  if (error) return handleDBError(error);
   return data || [];
 };
 
 export const saveTransaction = async (tx: Transaction) => {
   if (!supabase) return;
   const { error } = await supabase.from('transactions').insert([tx]);
-  if (error) throw new Error(error.message);
+  if (error) return handleDBError(error);
 };
 
 export const updateTransactionDB = async (id: string, tx: Transaction) => {
   if (!supabase) return;
   const { error } = await supabase.from('transactions').update(tx).eq('id', id);
-  if (error) throw new Error(error.message);
+  if (error) return handleDBError(error);
 };
 
 export const deleteTransactionDB = async (id: string) => {
@@ -95,4 +86,10 @@ export const subscribeToChanges = (table: string, callback: () => void) => {
     .channel(`realtime-${table}`)
     .on('postgres_changes', { event: '*', schema: 'public', table }, callback)
     .subscribe();
+};
+
+export const signIn = async (email: string, pass: string) => {
+  if (!supabase) return { error: { message: "Base de données non configurée." } };
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  return { data, error };
 };
