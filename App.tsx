@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'config'>('login');
   const [loading, setLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [dbError, setDbError] = useState<string | null>(null);
+  const [dbError, setDbError] = useState<{message: string, sql?: string} | null>(null);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +63,14 @@ const App: React.FC = () => {
       setTransactions(data);
       setDbError(null);
     } catch (err: any) {
-      setDbError(err.message || "Erreur de synchronisation");
+      if (err.message === "MISSING_COLUMN_METHOD") {
+        setDbError({
+          message: "La colonne 'method' est absente de votre table 'transactions'.",
+          sql: err.sql
+        });
+      } else {
+        setDbError({ message: err.message || "Erreur de synchronisation" });
+      }
     }
   };
 
@@ -75,14 +82,21 @@ const App: React.FC = () => {
         setEditingTransaction(null);
         setActiveView(Owner.GLOBAL);
       } catch (e: any) {
-        setDbError(e.message);
+        setDbError({ message: e.message });
       }
+    }
+  };
+
+  const copySQL = () => {
+    if (dbError?.sql) {
+      navigator.clipboard.writeText(dbError.sql);
+      alert("Commande SQL copiée ! Collez-la dans le SQL Editor de Supabase.");
     }
   };
 
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black animate-pulse text-[12px] uppercase tracking-[0.5em] italic">
-      INITIALISATION DU VAULT...
+      INITIALISATION DU VAULT MILLIONNAIRE...
     </div>
   );
 
@@ -98,7 +112,7 @@ const App: React.FC = () => {
                MILLIONAIRE<br/>
                <span className="text-indigo-500 not-italic">EN 2027</span>
              </h1>
-             <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] mt-6">Accès Sécurisé</p>
+             <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mt-6">Accès Sécurisé</p>
            </div>
 
            {authMode === 'config' ? (
@@ -130,7 +144,7 @@ const App: React.FC = () => {
               <button type="submit" disabled={isAuthenticating} className="w-full bg-indigo-600 text-white py-7 rounded-[2rem] font-black uppercase text-[12px] tracking-[0.4em] shadow-2xl hover:bg-indigo-500 active:scale-95 transition-all">
                 {isAuthenticating ? 'VERIFICATION...' : 'DEVERROUILLER LE VAULT'}
               </button>
-              <p className="text-[9px] text-white/15 text-center font-black uppercase mt-8 tracking-[0.2em] italic">Le million est une question d'exécution, pas de chance.</p>
+              <p className="text-[9px] text-white/15 text-center font-black uppercase mt-8 tracking-[0.2em] italic">"Le million est une question d'exécution, pas de chance."</p>
             </form>
           )}
         </div>
@@ -141,8 +155,28 @@ const App: React.FC = () => {
   return (
     <Layout activeView={activeView} onNavigate={(v) => { setEditingTransaction(null); setActiveView(v); }}>
       {dbError && (
-        <div className="bg-rose-600 text-white p-6 rounded-3xl mb-8 font-black text-xs uppercase tracking-widest shadow-2xl animate-in slide-in-from-top-4 duration-500">
-          ⚠️ {dbError}
+        <div className="bg-white border-2 border-rose-500 p-8 rounded-[2.5rem] mb-12 shadow-2xl shadow-rose-100 animate-in slide-in-from-top-6 duration-500">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center text-rose-600 text-3xl shrink-0">⚠️</div>
+            <div className="flex-1">
+               <h4 className="text-lg font-black uppercase text-slate-900 tracking-tighter">Action Requise sur la Database</h4>
+               <p className="text-sm text-slate-500 font-medium mt-1">{dbError.message}</p>
+               {dbError.sql && (
+                 <div className="mt-4 flex flex-col gap-3">
+                   <code className="block bg-slate-900 text-indigo-400 p-4 rounded-xl text-xs font-mono break-all leading-relaxed border-l-4 border-indigo-500">
+                     {dbError.sql}
+                   </code>
+                   <button 
+                     onClick={copySQL}
+                     className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest self-start hover:bg-indigo-700 transition-all shadow-lg"
+                   >
+                     Copier la commande SQL
+                   </button>
+                 </div>
+               )}
+            </div>
+            <button onClick={() => setDbError(null)} className="text-slate-300 hover:text-slate-600 transition-colors">Fermer</button>
+          </div>
         </div>
       )}
 
@@ -150,11 +184,11 @@ const App: React.FC = () => {
         <TransactionForm 
           onAdd={async (d) => {
             try { await DB.saveTransaction({...d, id: Math.random().toString(36).substr(2, 9)}); await loadTransactions(); setActiveView(d.owner); } 
-            catch(e: any) { setDbError(e.message); }
+            catch(e: any) { loadTransactions(); /* force refresh error UI */ }
           }} 
           onUpdate={async (id, d) => {
             try { await DB.updateTransactionDB(id, d); await loadTransactions(); setEditingTransaction(null); setActiveView(d.owner); } 
-            catch(e: any) { setDbError(e.message); }
+            catch(e: any) { loadTransactions(); }
           }} 
           onDelete={handleDelete}
           initialData={editingTransaction} 
@@ -163,7 +197,7 @@ const App: React.FC = () => {
       ) : activeView === 'Focus' ? (
         <FocusMode owner={Owner.GLOBAL} />
       ) : (
-        <div className="space-y-14">
+        <div className="space-y-16">
           <Dashboard 
             transactions={transactions} 
             ownerFilter={activeView as Owner} 
@@ -182,46 +216,55 @@ const App: React.FC = () => {
                  });
                  await loadTransactions();
                } catch (e: any) {
-                 setDbError(e.message);
+                 loadTransactions();
                }
             }} 
           />
 
           <div className="bg-white rounded-[4rem] border border-slate-100 shadow-2xl overflow-hidden">
-            <div className="p-12 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center bg-slate-50/10 gap-6">
+            <div className="p-12 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center bg-slate-50/10 gap-8">
               <div>
-                <h4 className="font-black uppercase text-[14px] tracking-[0.4em] text-slate-900 leading-none">Journal d'Opérations</h4>
-                <p className="text-[10px] font-black uppercase text-slate-400 mt-3">Audit complet des flux de capital</p>
+                <h4 className="font-black uppercase text-[15px] tracking-[0.4em] text-slate-900 leading-none italic">JOURNAL D'EXÉCUTION</h4>
+                <p className="text-[10px] font-black uppercase text-slate-400 mt-4 tracking-widest">Audit complet du patrimoine et des flux</p>
               </div>
-              <input type="text" placeholder="RECHERCHER DANS LE VAULT..." className="bg-white rounded-2xl px-8 py-5 text-[11px] font-black uppercase outline-none focus:ring-4 focus:ring-indigo-100 w-full md:w-96 transition-all shadow-inner border border-slate-100" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              <div className="relative w-full md:w-96 group">
+                <input 
+                  type="text" 
+                  placeholder="RECHERCHER DANS LE VAULT..." 
+                  className="bg-white rounded-2xl px-10 py-5 text-[11px] font-black uppercase outline-none focus:ring-4 focus:ring-indigo-100 w-full transition-all shadow-inner border border-slate-100 placeholder:opacity-30" 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)} 
+                />
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 transition-opacity">🔍</div>
+              </div>
             </div>
 
             <div className="md:hidden divide-y divide-slate-100">
               {transactions
                 .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
                 .map(t => (
-                <div key={t.id} className="p-10 flex flex-col gap-8">
+                <div key={t.id} className="p-10 flex flex-col gap-10">
                   <div className="flex items-center justify-between" onClick={() => {setEditingTransaction(t); setActiveView('Add');}}>
                     <div className="flex items-center gap-6">
-                      <div className={`w-16 h-16 rounded-[1.5rem] flex flex-col items-center justify-center font-black ${t.type === TransactionType.INCOME ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                      <div className={`w-16 h-16 rounded-[1.7rem] flex flex-col items-center justify-center font-black ${t.type === TransactionType.INCOME ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600 shadow-inner'}`}>
                         <span className="text-2xl leading-none">{t.type === TransactionType.INCOME ? '↑' : '↓'}</span>
-                        {t.method && t.method !== 'Standard' && <span className="text-[8px] mt-1 tracking-tighter uppercase">{t.method}</span>}
+                        {t.method && t.method !== 'Standard' && <span className="text-[8px] mt-1 tracking-tighter uppercase font-black">{t.method}</span>}
                       </div>
-                      <div className="max-w-[180px]">
-                        <p className="text-sm font-black uppercase truncate leading-tight text-slate-900">{t.projectName || t.category}</p>
-                        <div className="flex items-center gap-3 mt-3">
-                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t.date}</p>
-                           <span className={`text-[10px] font-black uppercase ${t.owner === Owner.LARBI ? 'text-indigo-600' : 'text-purple-600'}`}>{t.owner}</span>
+                      <div className="max-w-[200px]">
+                        <p className="text-sm font-black uppercase truncate leading-tight text-slate-900 tracking-tighter">{t.projectName || t.category}</p>
+                        <div className="flex items-center gap-4 mt-4">
+                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">{t.date}</p>
+                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${t.owner === Owner.LARBI ? 'bg-indigo-50 text-indigo-600' : 'bg-purple-50 text-purple-600'}`}>{t.owner}</span>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-lg font-black tabular-nums ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>{t.amount.toLocaleString()}€</p>
+                      <p className={`text-xl font-black tabular-nums tracking-tighter ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>{t.amount.toLocaleString()}€</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="flex-1 bg-slate-900 text-white py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl">Editer</button>
-                    <button onClick={() => handleDelete(t.id)} className="w-16 bg-rose-50 text-rose-600 py-5 rounded-2xl flex items-center justify-center border border-rose-100"><Icons.Trash /></button>
+                    <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="flex-1 bg-slate-900 text-white py-6 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all active:scale-95">ÉDITER L'OPÉRATION</button>
+                    <button onClick={() => handleDelete(t.id)} className="w-20 bg-rose-50 text-rose-600 py-6 rounded-2xl flex items-center justify-center border border-rose-100 hover:bg-rose-100 transition-colors"><Icons.Trash /></button>
                   </div>
                 </div>
               ))}
@@ -229,43 +272,43 @@ const App: React.FC = () => {
 
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                <thead><tr className="bg-slate-50/50 text-slate-400 text-[11px] uppercase font-black tracking-[0.3em] border-b border-slate-50"><th className="p-10">Opération / Stratégie</th><th className="p-10">Propriétaire</th><th className="p-10">Statut</th><th className="p-10 text-right">Montant</th><th className="p-10 text-center">Gestion</th></tr></thead>
+                <thead><tr className="bg-slate-50/50 text-slate-400 text-[11px] uppercase font-black tracking-[0.4em] border-b border-slate-50 italic"><th className="p-10">Opération / Stratégie</th><th className="p-10">Propriétaire</th><th className="p-10">Statut</th><th className="p-10 text-right">Montant Réel</th><th className="p-10 text-center">Gestion</th></tr></thead>
                 <tbody className="divide-y divide-slate-50">
                   {transactions
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50/30 group transition-all duration-300">
+                    <tr key={t.id} className="hover:bg-slate-50/50 group transition-all duration-300">
                       <td className="p-10">
-                        <div className="flex items-center gap-6">
-                          <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-black ${t.type === TransactionType.INCOME ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                            <span className="text-xl leading-none">{t.type === TransactionType.INCOME ? '↑' : '↓'}</span>
+                        <div className="flex items-center gap-8">
+                          <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black ${t.type === TransactionType.INCOME ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'bg-rose-50 text-rose-600 shadow-inner'}`}>
+                            <span className="text-2xl leading-none">{t.type === TransactionType.INCOME ? '↑' : '↓'}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-black uppercase text-sm text-slate-900 group-hover:text-indigo-600 transition-colors leading-none mb-2">{t.projectName || t.category}</span>
-                            <div className="flex items-center gap-3">
-                               <span className="text-[10px] font-black text-slate-300 tabular-nums">{t.date}</span>
+                            <span className="font-black uppercase text-[15px] text-slate-900 group-hover:text-indigo-600 transition-colors leading-none mb-3 tracking-tighter">{t.projectName || t.category}</span>
+                            <div className="flex items-center gap-4">
+                               <span className="text-[11px] font-black text-slate-300 tabular-nums italic">{t.date}</span>
                                {t.method && t.method !== 'Standard' && (
-                                 <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-lg uppercase tracking-widest">{t.method}</span>
+                                 <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-xl uppercase tracking-widest shadow-sm">{t.method}</span>
                                )}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="p-10">
-                        <span className={`text-[10px] font-black uppercase tracking-widest ${t.owner === Owner.LARBI ? 'text-indigo-600' : 'text-purple-600'}`}>{t.owner}</span>
+                        <span className={`text-[11px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-xl ${t.owner === Owner.LARBI ? 'bg-indigo-50 text-indigo-600' : 'bg-purple-50 text-purple-600'}`}>{t.owner}</span>
                       </td>
                       <td className="p-10">
-                        <span className={`text-[10px] font-black uppercase px-5 py-2 rounded-full ${t.isSold ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                        <span className={`text-[10px] font-black uppercase px-6 py-2.5 rounded-full shadow-sm ${t.isSold ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
                           {t.isSold ? 'CLOS ✅' : 'OUVERT ⏳'}
                         </span>
                       </td>
-                      <td className={`p-10 text-right font-black tabular-nums text-base ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      <td className={`p-10 text-right font-black tabular-nums text-lg tracking-tighter ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {t.type === TransactionType.INCOME ? '+' : '-'}{t.amount.toLocaleString()}€
                       </td>
                       <td className="p-10">
-                        <div className="flex justify-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
-                          <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-4 bg-white shadow-xl border border-slate-100 rounded-2xl hover:bg-slate-900 hover:text-white transition-all active:scale-90"><Icons.Pencil /></button>
-                          <button onClick={() => handleDelete(t.id)} className="p-4 bg-white shadow-xl border border-slate-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all active:scale-90"><Icons.Trash /></button>
+                        <div className="flex justify-center gap-5 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                          <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-5 bg-white shadow-2xl border border-slate-100 rounded-2xl hover:bg-slate-900 hover:text-white transition-all active:scale-90"><Icons.Pencil /></button>
+                          <button onClick={() => handleDelete(t.id)} className="p-5 bg-white shadow-2xl border border-slate-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all active:scale-90"><Icons.Trash /></button>
                         </div>
                       </td>
                     </tr>
@@ -273,6 +316,14 @@ const App: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            
+            {transactions.length === 0 && (
+              <div className="py-40 text-center opacity-20 flex flex-col items-center">
+                 <div className="text-8xl mb-6 grayscale">📦</div>
+                 <p className="font-black uppercase tracking-[0.5em] text-slate-900">Le Vault est vide</p>
+                 <p className="text-xs font-bold uppercase tracking-widest mt-4">Commencez à bâtir votre empire aujourd'hui</p>
+              </div>
+            )}
           </div>
         </div>
       )}

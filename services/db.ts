@@ -12,7 +12,7 @@ export const initDB = () => {
       supabase = createClient(url, key);
       return true;
     } catch (e) {
-      console.error("Erreur d'initialisation Supabase:", e);
+      console.error("Supabase Init Error:", e);
       return false;
     }
   }
@@ -22,18 +22,25 @@ export const initDB = () => {
 export const getSupabase = () => supabase;
 
 const handleDBError = (error: any) => {
-  if (error.message?.includes("column \"method\" of relation \"transactions\" does not exist")) {
-    throw new Error("ALERTE : La colonne 'method' manque dans votre table Supabase. Allez dans SQL Editor et lancez : ALTER TABLE transactions ADD COLUMN method text;");
+  // Détection spécifique de la colonne 'method' manquante
+  if (error.message?.includes("column \"method\"") || error.details?.includes("column \"method\"")) {
+    const err = new Error("MISSING_COLUMN_METHOD");
+    (err as any).sql = "ALTER TABLE transactions ADD COLUMN method text;";
+    throw err;
   }
-  throw new Error(error.message);
+  throw new Error(error.message || "Erreur de base de données inconnue");
 };
 
 // --- TRANSACTIONS ---
 export const getTransactions = async (): Promise<Transaction[]> => {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
-  if (error) return handleDBError(error);
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
+    if (error) return handleDBError(error);
+    return data || [];
+  } catch (e) {
+    return handleDBError(e);
+  }
 };
 
 export const saveTransaction = async (tx: Transaction) => {
