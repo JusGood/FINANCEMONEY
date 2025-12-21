@@ -25,7 +25,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     projectName: '',
     clientName: '',
     isForecast: false,
-    isSold: false,
+    isSold: true, // Par défaut, un revenu est considéré comme encaissé sauf si on le précise
     method: 'Standard' as OperationMethod
   });
 
@@ -45,7 +45,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
         projectName: initialData.projectName || '',
         clientName: initialData.clientName || '',
         isForecast: !!initialData.isForecast,
-        isSold: !!initialData.isSold,
+        isSold: initialData.isSold !== undefined ? initialData.isSold : true,
         method: initialData.method || 'Standard'
       });
     }
@@ -63,7 +63,6 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
   }, [formData.productPrice, formData.feePercentage, formData.type]);
 
   const handleProfitChange = (val: string) => {
-    // Permet d'écrire 0.6x pour un Flip Stock, mais garde le calcul auto pour Commande Client
     if (formData.type !== TransactionType.CLIENT_ORDER && val.length > 1 && (val.endsWith('x') || val.endsWith('*'))) {
       const numPart = val.slice(0, -1).replace(',', '.');
       const multiplier = parseFloat(numPart);
@@ -81,14 +80,14 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isClientOrder = formData.type === TransactionType.CLIENT_ORDER;
+    const isIncome = formData.type === TransactionType.INCOME;
     let finalProfit = formData.expectedProfit.toString().replace(/[x*]/g, '').replace(',', '.');
     
     const transactionData = {
-      // Pour une commande client, on ne "sort" pas d'argent de notre poche (0€ investi)
       amount: isClientOrder ? 0 : Math.abs(parseFloat(formData.amount || '0')),
       productPrice: isClientOrder ? parseFloat(formData.productPrice) : undefined,
       feePercentage: isClientOrder ? parseFloat(formData.feePercentage) : undefined,
-      expectedProfit: Math.abs(parseFloat(finalProfit || '0')),
+      expectedProfit: isIncome ? 0 : Math.abs(parseFloat(finalProfit || '0')),
       date: formData.date,
       category: formData.category,
       type: formData.type,
@@ -98,7 +97,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
       projectName: formData.projectName.trim() || undefined,
       clientName: formData.clientName.trim() || undefined,
       isForecast: formData.isForecast,
-      isSold: formData.isSold,
+      isSold: (formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) ? formData.isSold : formData.isSold,
       method: formData.method
     };
 
@@ -129,15 +128,15 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Activité</label>
-              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType, isSold: e.target.value !== TransactionType.CLIENT_ORDER && e.target.value !== TransactionType.INVESTMENT})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 <option value={TransactionType.CLIENT_ORDER}>Commission (Apport d'affaire)</option>
                 <option value={TransactionType.INVESTMENT}>Achat Flip (Stock personnel)</option>
-                <option value={TransactionType.INCOME}>Revenu Direct</option>
+                <option value={TransactionType.INCOME}>Revenu Direct / Salaire</option>
                 <option value={TransactionType.EXPENSE}>Dépense / Frais</option>
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest">Date de l'opération</label>
+              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest">Date prévue/réelle</label>
               <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
             </div>
           </div>
@@ -145,7 +144,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           <div className="p-12 bg-slate-950 rounded-[2.5rem] border border-white/5 text-center shadow-inner relative overflow-hidden group">
             <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-colors"></div>
             <p className="relative z-10 text-[11px] font-black uppercase text-indigo-400 mb-4 tracking-[0.5em]">
-              {formData.type === TransactionType.CLIENT_ORDER ? 'BÉNÉFICE TOTAL DU CLIENT' : 'MONTANT INVESTI / SORTI'}
+              {formData.type === TransactionType.CLIENT_ORDER ? 'BÉNÉFICE TOTAL DU CLIENT' : 'MONTANT DE L\'OPÉRATION'}
             </p>
             <div className="relative z-10 flex items-center justify-center gap-4">
                <input
@@ -158,6 +157,32 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
               <span className="text-4xl font-black text-white/20 italic">€</span>
             </div>
           </div>
+
+          {/* Option pour encaisser plus tard pour les revenus */}
+          {formData.type === TransactionType.INCOME && (
+             <div className="flex items-center justify-between p-8 bg-indigo-500/5 rounded-[2rem] border border-indigo-500/10">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Disponibilité des fonds</p>
+                  <p className="text-xs text-slate-500 font-bold">L'argent est-il déjà sur votre compte ?</p>
+                </div>
+                <div className="flex gap-2">
+                   <button 
+                    type="button" 
+                    onClick={() => setFormData({...formData, isSold: false})}
+                    className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!formData.isSold ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
+                   >
+                    Plus tard
+                   </button>
+                   <button 
+                    type="button" 
+                    onClick={() => setFormData({...formData, isSold: true})}
+                    className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.isSold ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
+                   >
+                    Déjà reçu
+                   </button>
+                </div>
+             </div>
+          )}
 
           {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
             <div className="space-y-8 animate-in fade-in slide-in-from-top-2">
@@ -191,47 +216,36 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
                 </div>
               </div>
 
-              {formData.type === TransactionType.CLIENT_ORDER && (
-                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl flex items-center gap-4">
-                   <div className="text-xl">ℹ️</div>
-                   <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight leading-relaxed">
-                     Mode Commission Activé : Le Vault enregistrera uniquement votre part ({formData.expectedProfit}€) comme gain réel lors de la clôture.
-                   </p>
+              <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider italic">Statut du dossier</span>
+                <div className="flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setFormData({...formData, isSold: false})}
+                    className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase transition-all tracking-widest ${!formData.isSold ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    En attente (Ouvert)
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setFormData({...formData, isSold: true})}
+                    className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase transition-all tracking-widest ${formData.isSold ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Payé (Clos)
+                  </button>
                 </div>
-              )}
-
-              {initialData && (
-                <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                  <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider italic">Statut du dossier</span>
-                  <div className="flex gap-3">
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, isSold: false})}
-                      className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase transition-all tracking-widest ${!formData.isSold ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/20' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      En attente (Ouvert)
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, isSold: true})}
-                      className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase transition-all tracking-widest ${formData.isSold ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      Payé (Clos)
-                    </button>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           )}
 
           <div className="space-y-6 pt-6">
             <div className="space-y-2">
-               <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest">Identifiant / Produit</label>
-               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-sm uppercase outline-none border-none placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Nom du produit ou référence client..." />
+               <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest">Intitulé / Libellé</label>
+               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-sm uppercase outline-none border-none placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Nom du produit, salaire, virement..." />
             </div>
             
             <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-7 rounded-[2rem] text-[13px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 dark:hover:bg-indigo-500 hover:-translate-y-1 transition-all active:scale-95">
-              {initialData ? 'Mettre à jour le dossier' : 'Valider l\'opération financière'}
+              {initialData ? 'Mettre à jour' : 'Enregistrer le flux'}
             </button>
             
             {initialData && onDelete && (
@@ -240,7 +254,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
                 onClick={() => onDelete(initialData.id)}
                 className="w-full bg-rose-500/10 text-rose-500 font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.3em] hover:bg-rose-500 hover:text-white transition-all mt-6"
               >
-                Archiver / Supprimer
+                Supprimer
               </button>
             )}
           </div>

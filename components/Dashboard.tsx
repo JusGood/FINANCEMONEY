@@ -23,12 +23,12 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
     if (curr.isForecast) return acc;
-    // On ne compte dans le cash que ce qui est réellement encaissé ou sorti
+    // On ne compte dans le cash que ce qui est réellement encaissé ou sorti (isSold: true)
+    // Sauf les dépenses qui sont toujours déduites immédiatement
     if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += curr.amount;
-    else if (curr.type === TransactionType.INCOME) acc.income += curr.amount;
+    else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += curr.amount;
     else if (curr.type === TransactionType.EXPENSE) acc.expense += curr.amount;
     else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
-    // Cas spécial Commande Client : Si elle est close, elle compte comme un revenu de commission
     else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
     
     return acc;
@@ -38,11 +38,11 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   const projects = useMemo(() => {
     return filtered
-      .filter(t => (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && !t.isSold)
+      .filter(t => (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) && !t.isSold)
       .map(t => ({
-        name: t.projectName || 'Sans Nom',
+        name: t.projectName || t.category || 'Sans Nom',
         totalSpent: t.amount,
-        potentialProfit: t.expectedProfit || 0,
+        potentialProfit: t.type === TransactionType.INCOME ? t.amount : (t.expectedProfit || 0),
         originalTransactionId: t.id,
         type: t.type,
         owner: t.owner
@@ -65,12 +65,10 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       {/* Top Bar Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group">
-          {/* Correction : ajout de pointer-events-none pour que l'icône ne bloque pas les clics */}
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none z-0">
              <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
           </div>
           
-          {/* Contenu forcé au premier plan */}
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-3">
               <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">CASH FLOW LIQUIDE</p>
@@ -166,13 +164,15 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       {projects.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm mt-8">
            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-             <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Opérations en cours ({projects.length})</span>
+             <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Attentes d'Encaissement ({projects.length})</span>
            </div>
            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 divide-x divide-y divide-slate-100 dark:divide-slate-800">
              {projects.map(p => (
                <div key={p.originalTransactionId} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
                   <div className="flex justify-between items-start mb-3">
-                    <span className="text-[10px] font-black px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 uppercase">{p.owner}</span>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${p.type === TransactionType.INCOME ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600' : 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600'}`}>
+                      {p.type === TransactionType.INCOME ? 'REVENU' : p.owner}
+                    </span>
                     <span className="text-sm font-black text-emerald-500">+{p.potentialProfit}€</span>
                   </div>
                   <p className="text-[12px] font-black text-slate-800 dark:text-slate-200 truncate uppercase mb-4 tracking-tight">{p.name}</p>
@@ -180,7 +180,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                     onClick={() => onConfirmSale(p.originalTransactionId!)}
                     className="w-full text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 py-2.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
                   >
-                    Encaisser
+                    Confirmer Réception
                   </button>
                </div>
              ))}
