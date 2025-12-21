@@ -85,125 +85,79 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     else onAdd(transactionData);
   };
 
-  const methods: OperationMethod[] = ['Standard', 'FTID', 'DNA', 'EB', 'LIT'];
-
   return (
-    <div className="max-w-4xl mx-auto py-4 md:py-12 md:px-6">
-      <div className="bg-white dark:bg-slate-900 p-6 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-2xl relative animate-in fade-in zoom-in-95 duration-500 transition-colors">
+    <div className="max-w-3xl mx-auto py-6">
+      <div className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors">
         <div className="flex items-center justify-between mb-8">
-           <button onClick={onCancel} type="button" className="text-slate-400 dark:text-slate-500 font-black text-[10px] uppercase hover:text-slate-900 dark:hover:text-white transition-colors">← Retour</button>
-           <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">
-            {initialData ? 'Editer l\'Opération' : 'Nouveau Flux'}
+           <button onClick={onCancel} type="button" className="text-slate-400 dark:text-slate-500 font-black text-[9px] uppercase hover:text-slate-900 transition-colors">← Retour</button>
+           <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">
+            {initialData ? 'Edition Flux' : 'Nouvelle Opération'}
           </h3>
           <div className="w-10"></div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* SÉLECTEUR PROPRIÉTAIRE */}
-          <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1.5">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-slate-50 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
-              <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${formData.owner === o ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg scale-[1.02]' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+              <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-3 rounded-lg font-black text-[9px] uppercase transition-all ${formData.owner === o ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'}`}>
                 {o}
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest">Type d'opération</label>
-              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs appearance-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border-none outline-none">
-                <option value={TransactionType.CLIENT_ORDER}>Commande Client 👤</option>
-                <option value={TransactionType.INVESTMENT}>Achat Flip / Stock 📦</option>
-                <option value={TransactionType.INCOME}>Revenu Direct 💰</option>
-                <option value={TransactionType.EXPENSE}>Dépense 📉</option>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[8px] font-black uppercase text-slate-400 ml-2 tracking-widest">Type</label>
+              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs border-none outline-none focus:ring-1 focus:ring-indigo-500">
+                <option value={TransactionType.CLIENT_ORDER}>Commande Client</option>
+                <option value={TransactionType.INVESTMENT}>Achat Flip</option>
+                <option value={TransactionType.INCOME}>Revenu Direct</option>
+                <option value={TransactionType.EXPENSE}>Dépense</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest">Date</label>
-              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase border-none outline-none" />
+            <div className="space-y-1.5">
+              <label className="text-[8px] font-black uppercase text-slate-400 ml-2 tracking-widest">Date</label>
+              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs border-none outline-none" />
             </div>
           </div>
 
-          {/* SÉLECTEUR DE MÉTHODE (FTID, DNA, etc.) */}
-          {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
-            <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4 tracking-widest">Méthode de Récupération / Stratégie</label>
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-                {methods.map(m => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setFormData({...formData, method: m})}
-                    className={`py-4 rounded-2xl font-black text-[10px] uppercase transition-all border-2 ${
-                      formData.method === m 
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm' 
-                        : 'border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="p-10 bg-slate-50 dark:bg-slate-800 rounded-[3rem] space-y-3 border border-slate-100 dark:border-slate-700 shadow-inner transition-colors">
-            <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 text-center tracking-[0.3em]">
-              {formData.type === TransactionType.CLIENT_ORDER ? 'PRIX DE VENTE (€)' : 'MONTANT INVESTI (€)'}
+          <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+            <p className="text-[8px] font-black uppercase text-slate-400 mb-2 tracking-[0.3em]">
+              {formData.type === TransactionType.CLIENT_ORDER ? 'PRIX DE VENTE' : 'MONTANT'}
             </p>
             <input
               type="number" required step="0.01" 
               value={formData.type === TransactionType.CLIENT_ORDER ? formData.productPrice : formData.amount}
               onChange={(e) => setFormData({...formData, [formData.type === TransactionType.CLIENT_ORDER ? 'productPrice' : 'amount']: e.target.value})}
-              className="w-full bg-transparent text-center text-6xl font-black text-slate-900 dark:text-white outline-none tabular-nums"
+              className="w-full bg-transparent text-center text-5xl font-black text-slate-900 dark:text-white outline-none tabular-nums"
               placeholder="0.00"
             />
           </div>
 
           {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
-            <div className="bg-emerald-500 p-8 rounded-[3rem] shadow-xl shadow-emerald-100 dark:shadow-none flex items-center justify-between group transition-all hover:scale-[1.01]">
-              <div className="flex flex-col">
-                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Profit Cible Prévu</p>
-                <div className="flex items-baseline gap-2">
-                   <input 
-                     type="number" 
-                     step="0.01" 
-                     value={formData.expectedProfit} 
-                     onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})} 
-                     className="bg-transparent text-4xl font-black text-white outline-none w-40 tabular-nums" 
-                   />
-                   <span className="text-white/50 font-black italic">EUR</span>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[8px] font-black uppercase text-slate-400 ml-2">Profit Net Estimé</label>
+                <input type="number" step="0.01" value={formData.expectedProfit} onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})} className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm outline-none border border-emerald-100 dark:border-emerald-900/30" />
               </div>
-              <div className="text-5xl group-hover:rotate-12 transition-transform">💎</div>
+              <div className="space-y-1.5">
+                <label className="text-[8px] font-black uppercase text-slate-400 ml-2">Méthode</label>
+                <select value={formData.method} onChange={(e) => setFormData({...formData, method: e.target.value as OperationMethod})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs outline-none border-none">
+                  <option value="Standard">Standard</option>
+                  <option value="FTID">FTID</option>
+                  <option value="DNA">DNA</option>
+                  <option value="EB">EB</option>
+                  <option value="LIT">LIT</option>
+                </select>
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4">Nom de l'Opération</label>
-              <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase border-none outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder:opacity-30" placeholder="Ex: STOCK IPHONE 15 PRO" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 ml-4">Client ou Référence</label>
-              <input type="text" value={formData.clientName} onChange={(e) => setFormData({...formData, clientName: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase border-none outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder:opacity-30" placeholder="Ex: @vendeur_telecom" />
-            </div>
-          </div>
-
-          <div className="pt-8 flex flex-col gap-4">
-            <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-7 rounded-[2.5rem] text-[11px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all active:scale-95">
-              {initialData ? 'Enregistrer les Modifications' : 'Lancer l\'Opération Financière'}
+          <div className="space-y-4 pt-4">
+            <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs uppercase outline-none border-none placeholder:text-slate-300" placeholder="Nom du projet..." />
+            <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-5 rounded-xl text-[10px] uppercase tracking-[0.3em] shadow-lg hover:shadow-indigo-200 dark:hover:shadow-none hover:-translate-y-0.5 transition-all">
+              {initialData ? 'METTRE À JOUR' : 'VALIDER LE FLUX'}
             </button>
-            
-            {initialData && onDelete && (
-              <button 
-                type="button" 
-                onClick={() => onDelete(initialData.id)}
-                className="w-full bg-white dark:bg-slate-800 text-rose-500 font-black py-4 rounded-xl text-[10px] uppercase tracking-widest border border-rose-100 dark:border-rose-900/30 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
-              >
-                Supprimer de l'Historique
-              </button>
-            )}
           </div>
         </form>
       </div>

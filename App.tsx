@@ -65,17 +65,17 @@ const App: React.FC = () => {
     } catch (err: any) {
       if (err.message === "MISSING_COLUMN_METHOD") {
         setDbError({
-          message: "La colonne 'method' est absente de votre table 'transactions'.",
+          message: "Database schema incomplete: column 'method' is missing.",
           sql: err.sql
         });
       } else {
-        setDbError({ message: err.message || "Erreur de synchronisation" });
+        setDbError({ message: err.message || "Sync Error" });
       }
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Supprimer définitivement cette opération du Vault ?')) {
+    if (window.confirm('Supprimer définitivement du Vault ?')) {
       try {
         await DB.deleteTransactionDB(id);
         await loadTransactions();
@@ -87,32 +87,22 @@ const App: React.FC = () => {
     }
   };
 
-  const copySQL = () => {
-    if (dbError?.sql) {
-      navigator.clipboard.writeText(dbError.sql);
-      alert("Commande SQL copiée ! Collez-la dans le SQL Editor de Supabase.");
-    }
-  };
-
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black animate-pulse text-[12px] uppercase tracking-[0.5em] italic">
-      INITIALISATION DU VAULT MILLIONNAIRE...
+    <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black animate-pulse text-[10px] uppercase tracking-widest italic">
+      Chargement du Vault...
     </div>
   );
 
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 pb-24 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2"></div>
-        
-        <div className="max-w-md w-full bg-white/5 backdrop-blur-3xl p-12 rounded-[4rem] border border-white/10 shadow-2xl text-center relative z-10">
-           <div className="mb-14">
-             <h1 className="text-4xl font-black text-white tracking-tighter uppercase leading-tight italic">
+        <div className="max-w-md w-full bg-white/5 backdrop-blur-3xl p-10 rounded-[2rem] border border-white/10 shadow-2xl relative z-10 text-center">
+           <div className="mb-10">
+             <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic">
                MILLIONAIRE<br/>
                <span className="text-indigo-500 not-italic">EN 2027</span>
              </h1>
-             <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mt-6">Accès Sécurisé</p>
+             <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-4">Auth Required</p>
            </div>
 
            {authMode === 'config' ? (
@@ -121,10 +111,10 @@ const App: React.FC = () => {
               localStorage.setItem('supabase_url', dbConfig.url.trim());
               localStorage.setItem('supabase_key', dbConfig.key.trim());
               if (DB.initDB()) { setAuthMode('login'); }
-            }} className="space-y-4">
-              <input type="text" placeholder="URL Supabase" className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white text-xs outline-none focus:bg-white/10 transition-all placeholder:text-white/20" value={dbConfig.url} onChange={e => setDbConfig({...dbConfig, url: e.target.value})} required />
-              <input type="text" placeholder="Clé API Anon" className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white text-xs outline-none focus:bg-white/10 transition-all placeholder:text-white/20" value={dbConfig.key} onChange={e => setDbConfig({...dbConfig, key: e.target.value})} required />
-              <button type="submit" className="w-full bg-white text-slate-950 py-6 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-2xl hover:scale-105 transition-transform">Lier la Database</button>
+            }} className="space-y-3">
+              <input type="text" placeholder="URL Supabase" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-xs outline-none focus:bg-white/10" value={dbConfig.url} onChange={e => setDbConfig({...dbConfig, url: e.target.value})} required />
+              <input type="text" placeholder="Anon Key" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-xs outline-none focus:bg-white/10" value={dbConfig.key} onChange={e => setDbConfig({...dbConfig, key: e.target.value})} required />
+              <button type="submit" className="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl">Connect DB</button>
             </form>
           ) : (
             <form onSubmit={async (e) => {
@@ -132,19 +122,16 @@ const App: React.FC = () => {
               setIsAuthenticating(true);
               try {
                 const { data, error } = await DB.signIn(email, password);
-                if (error) setErrorMsg("Clés d'accès invalides"); else if (data?.user) setUser(data.user);
+                if (error) setErrorMsg("Clés invalides"); else if (data?.user) setUser(data.user);
               } catch (err) { setErrorMsg("Erreur réseau"); }
               finally { setIsAuthenticating(false); }
-            }} className="space-y-6 text-left">
-              <div className="space-y-4">
-                <input type="email" placeholder="Email Fortune" className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-white/20" value={email} onChange={e => setEmail(e.target.value)} required />
-                <input type="password" placeholder="Mot de Passe" className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-white/20" value={password} onChange={e => setPassword(e.target.value)} required />
-              </div>
-              {errorMsg && <p className="text-rose-500 text-[10px] font-black uppercase text-center tracking-widest">{errorMsg}</p>}
-              <button type="submit" disabled={isAuthenticating} className="w-full bg-indigo-600 text-white py-7 rounded-[2rem] font-black uppercase text-[12px] tracking-[0.4em] shadow-2xl hover:bg-indigo-500 active:scale-95 transition-all">
-                {isAuthenticating ? 'VERIFICATION...' : 'DEVERROUILLER LE VAULT'}
+            }} className="space-y-4 text-left">
+              <input type="email" placeholder="Email" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500" value={email} onChange={e => setEmail(e.target.value)} required />
+              <input type="password" placeholder="Pass" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500" value={password} onChange={e => setPassword(e.target.value)} required />
+              {errorMsg && <p className="text-rose-500 text-[8px] font-black uppercase text-center">{errorMsg}</p>}
+              <button type="submit" disabled={isAuthenticating} className="w-full bg-indigo-600 text-white py-5 rounded-xl font-black uppercase text-[10px] tracking-[0.3em] shadow-xl hover:bg-indigo-500 active:scale-95 transition-all">
+                {isAuthenticating ? 'Vérification...' : 'Déverrouiller'}
               </button>
-              <p className="text-[9px] text-white/15 text-center font-black uppercase mt-8 tracking-[0.2em] italic">"Le million est une question d'exécution, pas de chance."</p>
             </form>
           )}
         </div>
@@ -155,28 +142,12 @@ const App: React.FC = () => {
   return (
     <Layout activeView={activeView} onNavigate={(v) => { setEditingTransaction(null); setActiveView(v); }}>
       {dbError && (
-        <div className="bg-white dark:bg-slate-900 border-2 border-rose-500 p-8 rounded-[2.5rem] mb-12 shadow-2xl shadow-rose-100 dark:shadow-none animate-in slide-in-from-top-6 duration-500">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-400 text-3xl shrink-0">⚠️</div>
-            <div className="flex-1">
-               <h4 className="text-lg font-black uppercase text-slate-900 dark:text-white tracking-tighter">Action Requise sur la Database</h4>
-               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">{dbError.message}</p>
-               {dbError.sql && (
-                 <div className="mt-4 flex flex-col gap-3">
-                   <code className="block bg-slate-900 dark:bg-black text-indigo-400 p-4 rounded-xl text-xs font-mono break-all leading-relaxed border-l-4 border-indigo-500">
-                     {dbError.sql}
-                   </code>
-                   <button 
-                     onClick={copySQL}
-                     className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest self-start hover:bg-indigo-700 transition-all shadow-lg"
-                   >
-                     Copier la commande SQL
-                   </button>
-                 </div>
-               )}
-            </div>
-            <button onClick={() => setDbError(null)} className="text-slate-300 hover:text-slate-600 transition-colors">Fermer</button>
+        <div className="bg-white dark:bg-slate-900 border border-rose-500/30 p-4 rounded-xl mb-8 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-4">
+            <span className="text-xl">⚠️</span>
+            <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">{dbError.message}</div>
           </div>
+          {dbError.sql && <button onClick={() => {navigator.clipboard.writeText(dbError.sql!); alert("SQL Copied");}} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest">Copy Fix SQL</button>}
         </div>
       )}
 
@@ -197,7 +168,7 @@ const App: React.FC = () => {
       ) : activeView === 'Focus' ? (
         <FocusMode owner={Owner.GLOBAL} />
       ) : (
-        <div className="space-y-16">
+        <div className="space-y-12">
           <Dashboard 
             transactions={transactions} 
             ownerFilter={activeView as Owner} 
@@ -211,104 +182,51 @@ const App: React.FC = () => {
                    date: new Date().toISOString().split('T')[0],
                    amount: (tx.amount || 0) + (tx.expectedProfit || 0),
                    category: tx.category, type: TransactionType.INCOME, account: tx.account,
-                   owner: tx.owner, note: `Profit encaissé: ${tx.projectName || 'Sans nom'}`, isSold: true,
+                   owner: tx.owner, note: `Profit: ${tx.projectName || 'Sans nom'}`, isSold: true,
                    method: tx.method
                  });
                  await loadTransactions();
-               } catch (e: any) {
-                 loadTransactions();
-               }
+               } catch (e: any) { loadTransactions(); }
             }} 
           />
 
-          <div className="bg-white dark:bg-slate-900 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden transition-colors">
-            <div className="p-12 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center bg-slate-50/10 gap-8">
-              <div>
-                <h4 className="font-black uppercase text-[15px] tracking-[0.4em] text-slate-900 dark:text-white leading-none italic">JOURNAL D'EXÉCUTION</h4>
-                <p className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 mt-4 tracking-widest">Audit complet du patrimoine et des flux</p>
-              </div>
-              <div className="relative w-full md:w-96 group">
+          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/20">
+              <h4 className="font-black uppercase text-[11px] tracking-widest text-slate-900 dark:text-white">Audit des Flux</h4>
+              <div className="relative">
                 <input 
                   type="text" 
-                  placeholder="RECHERCHER DANS LE VAULT..." 
-                  className="bg-white dark:bg-slate-800 dark:text-white rounded-2xl px-10 py-5 text-[11px] font-black uppercase outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 w-full transition-all shadow-inner border border-slate-100 dark:border-slate-700 placeholder:opacity-30" 
+                  placeholder="Rechercher..." 
+                  className="bg-white dark:bg-slate-800 rounded-lg px-4 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-200 dark:border-slate-700 w-48 md:w-64" 
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)} 
                 />
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 transition-opacity">🔍</div>
               </div>
             </div>
 
-            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
-              {transactions
-                .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
-                .map(t => (
-                <div key={t.id} className="p-10 flex flex-col gap-10">
-                  <div className="flex items-center justify-between" onClick={() => {setEditingTransaction(t); setActiveView('Add');}}>
-                    <div className="flex items-center gap-6">
-                      <div className={`w-16 h-16 rounded-[1.7rem] flex flex-col items-center justify-center font-black ${t.type === TransactionType.INCOME ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 shadow-inner'}`}>
-                        <span className="text-2xl leading-none">{t.type === TransactionType.INCOME ? '↑' : '↓'}</span>
-                        {t.method && t.method !== 'Standard' && <span className="text-[8px] mt-1 tracking-tighter uppercase font-black">{t.method}</span>}
-                      </div>
-                      <div className="max-w-[200px]">
-                        <p className="text-sm font-black uppercase truncate leading-tight text-slate-900 dark:text-white tracking-tighter">{t.projectName || t.category}</p>
-                        <div className="flex items-center gap-4 mt-4">
-                           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest italic">{t.date}</p>
-                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${t.owner === Owner.LARBI ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600'}`}>{t.owner}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-xl font-black tabular-nums tracking-tighter ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>{t.amount.toLocaleString()}€</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="flex-1 bg-slate-900 dark:bg-indigo-600 text-white py-6 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all active:scale-95">ÉDITER</button>
-                    <button onClick={() => handleDelete(t.id)} className="w-20 bg-rose-50 dark:bg-rose-900/20 text-rose-600 py-6 rounded-2xl flex items-center justify-center border border-rose-100 dark:border-rose-900/30 hover:bg-rose-100 transition-colors"><Icons.Trash /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead><tr className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 text-[11px] uppercase font-black tracking-[0.4em] border-b border-slate-50 dark:border-slate-800 italic"><th className="p-10">Opération / Stratégie</th><th className="p-10">Propriétaire</th><th className="p-10">Statut</th><th className="p-10 text-right">Montant Réel</th><th className="p-10 text-center">Gestion</th></tr></thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead><tr className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-400 text-[9px] uppercase font-black tracking-widest border-b border-slate-200 dark:border-slate-800"><th className="px-6 py-4">Opération</th><th className="px-6 py-4">Propriétaire</th><th className="px-6 py-4">Statut</th><th className="px-6 py-4 text-right">Montant</th><th className="px-6 py-4 text-center">Gérer</th></tr></thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {transactions
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 group transition-all duration-300">
-                      <td className="p-10">
-                        <div className="flex items-center gap-8">
-                          <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black ${t.type === TransactionType.INCOME ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 shadow-sm' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 shadow-inner'}`}>
-                            <span className="text-2xl leading-none">{t.type === TransactionType.INCOME ? '↑' : '↓'}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-black uppercase text-[15px] text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors leading-none mb-3 tracking-tighter">{t.projectName || t.category}</span>
-                            <div className="flex items-center gap-4">
-                               <span className="text-[11px] font-black text-slate-300 dark:text-slate-600 tabular-nums italic">{t.date}</span>
-                               {t.method && t.method !== 'Standard' && (
-                                 <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1 rounded-xl uppercase tracking-widest shadow-sm">{t.method}</span>
-                               )}
-                            </div>
+                    <tr key={t.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/30 group transition-all">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${t.type === TransactionType.INCOME ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600'}`}>{t.type === TransactionType.INCOME ? '↑' : '↓'}</div>
+                          <div>
+                            <p className="font-black uppercase text-[11px] text-slate-900 dark:text-white tracking-tighter leading-none mb-1">{t.projectName || t.category}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{t.date} {t.method !== 'Standard' && <span className="ml-2 text-indigo-500">• {t.method}</span>}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="p-10">
-                        <span className={`text-[11px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-xl ${t.owner === Owner.LARBI ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600'}`}>{t.owner}</span>
-                      </td>
-                      <td className="p-10">
-                        <span className={`text-[10px] font-black uppercase px-6 py-2.5 rounded-full shadow-sm ${t.isSold ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-100 dark:border-amber-900/30'}`}>
-                          {t.isSold ? 'CLOS ✅' : 'OUVERT ⏳'}
-                        </span>
-                      </td>
-                      <td className={`p-10 text-right font-black tabular-nums text-lg tracking-tighter ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        {t.type === TransactionType.INCOME ? '+' : '-'}{t.amount.toLocaleString()}€
-                      </td>
-                      <td className="p-10">
-                        <div className="flex justify-center gap-5 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                          <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-5 bg-white dark:bg-slate-800 shadow-2xl border border-slate-100 dark:border-slate-700 rounded-2xl hover:bg-slate-900 dark:hover:bg-indigo-600 hover:text-white transition-all active:scale-90"><Icons.Pencil /></button>
-                          <button onClick={() => handleDelete(t.id)} className="p-5 bg-white dark:bg-slate-800 shadow-2xl border border-slate-100 dark:border-slate-700 rounded-2xl hover:bg-rose-600 hover:text-white transition-all active:scale-90"><Icons.Trash /></button>
+                      <td className="px-6 py-4"><span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md ${t.owner === Owner.LARBI ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600'}`}>{t.owner}</span></td>
+                      <td className="px-6 py-4"><span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md ${t.isSold ? 'text-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10' : 'text-amber-500 bg-amber-50/50 dark:bg-amber-900/10'}`}>{t.isSold ? 'CLOS' : 'OUVERT'}</span></td>
+                      <td className={`px-6 py-4 text-right font-black tabular-nums text-sm ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>{t.amount.toLocaleString()}€</td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-md hover:bg-slate-900 hover:text-white transition-all"><Icons.Pencil /></button>
                         </div>
                       </td>
                     </tr>
