@@ -13,6 +13,7 @@ interface Props {
 const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }) => {
   const [aiReport, setAiReport] = useState<string | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const filtered = useMemo(() => 
     ownerFilter === Owner.GLOBAL 
@@ -22,10 +23,14 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
     if (curr.isForecast) return acc;
+    // On ne compte dans le cash que ce qui est réellement encaissé ou sorti
     if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += curr.amount;
     else if (curr.type === TransactionType.INCOME) acc.income += curr.amount;
     else if (curr.type === TransactionType.EXPENSE) acc.expense += curr.amount;
     else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
+    // Cas spécial Commande Client : Si elle est close, elle compte comme un revenu de commission
+    else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
+    
     return acc;
   }, { initial: 0, income: 0, expense: 0, invested: 0 }), [filtered]);
 
@@ -59,27 +64,66 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     <div className="space-y-10">
       {/* Top Bar Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-10">
-             <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+        <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+             <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
           </div>
-          <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50 mb-3">CASH FLOW LIQUIDE</p>
+          
+          <div className="flex justify-between items-start mb-3">
+            <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">CASH FLOW LIQUIDE</p>
+            <button 
+              onClick={() => setShowDetails(!showDetails)}
+              className="text-[10px] font-black bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg transition-all border border-white/10"
+            >
+              {showDetails ? 'MASQUER DÉTAILS' : 'VOIR PROVENANCE'}
+            </button>
+          </div>
+
           <div className="flex items-baseline gap-3">
             <h2 className="text-5xl font-black tracking-tighter tabular-nums text-white italic">
               {currentCash.toLocaleString()}
             </h2>
             <span className="text-sm font-bold text-white/40 uppercase tracking-widest">EUR</span>
           </div>
-          <div className="mt-8 flex gap-8 border-t border-white/10 pt-6">
-             <div>
-                <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Patrimoine</p>
-                <p className="text-lg font-black text-white">{totalPatrimony.toLocaleString()}€</p>
-             </div>
-             <div>
-                <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Profits Attentus</p>
-                <p className="text-lg font-black text-emerald-400">+{latentProfits.toLocaleString()}€</p>
-             </div>
-          </div>
+
+          {showDetails ? (
+            <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-white/40 uppercase">Initial :</span>
+                  <span className="text-[12px] font-black text-white">+{stats.initial}€</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-white/40 uppercase">Gains/Comms :</span>
+                  <span className="text-[12px] font-black text-emerald-400">+{stats.income}€</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-white/40 uppercase">Dépenses :</span>
+                  <span className="text-[12px] font-black text-rose-400">-{stats.expense}€</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-white/40 uppercase">Stock Actif :</span>
+                  <span className="text-[12px] font-black text-rose-400">-{stats.invested}€</span>
+                </div>
+              </div>
+              <div className="col-span-2 text-center pt-2">
+                <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">C'est ici que se cachent vos {currentCash - 120}€ d'écart.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8 flex gap-8 border-t border-white/10 pt-6">
+               <div>
+                  <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Patrimoine</p>
+                  <p className="text-lg font-black text-white">{totalPatrimony.toLocaleString()}€</p>
+               </div>
+               <div>
+                  <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Profits Attendus</p>
+                  <p className="text-lg font-black text-emerald-400">+{latentProfits.toLocaleString()}€</p>
+               </div>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
@@ -110,7 +154,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         </div>
       </div>
 
-      {/* Stock Actif */}
+      {/* Opérations Actives */}
       {projects.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm mt-8">
            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
