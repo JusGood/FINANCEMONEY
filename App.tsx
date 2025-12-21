@@ -158,11 +158,11 @@ const App: React.FC = () => {
 
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors relative z-0">
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
-              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400">Journal d'Audit</h4>
-              <div className="relative flex-1 max-w-sm">
+              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal d'Audit Financier</h4>
+              <div className="relative flex-1 max-sm:w-full max-w-sm">
                 <input 
                   type="text" 
-                  placeholder="RECHERCHER..." 
+                  placeholder="RECHERCHER DANS LE VAULT..." 
                   className="bg-white dark:bg-slate-950 rounded-2xl px-6 py-3 text-[11px] font-black uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 border-none w-full transition-all placeholder:text-slate-300" 
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)} 
@@ -173,58 +173,64 @@ const App: React.FC = () => {
               <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[10px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-8 py-5">Opération</th>
+                    <th className="px-8 py-5">Dossier / Produit</th>
                     <th className="px-8 py-5">Méthode</th>
-                    <th className="px-8 py-5">Proprio</th>
+                    <th className="px-8 py-5">Agent</th>
                     <th className="px-8 py-5">Statut</th>
-                    <th className="px-8 py-5 text-right">Montant</th>
+                    <th className="px-8 py-5 text-right">Profit Net (Ma Part)</th>
                     <th className="px-8 py-5 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {transactions
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
-                    .map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
-                      <td className="px-8 py-6">
-                        <div className="flex flex-col">
-                          <span className="font-black uppercase text-sm text-slate-900 dark:text-white truncate max-w-[250px] tracking-tight">{t.projectName || t.category}</span>
-                          <span className="text-[10px] text-slate-400 font-bold tabular-nums tracking-wider uppercase mt-1">{t.date}</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 border-2 border-slate-100 dark:border-slate-800 px-3 py-1.5 rounded-xl uppercase tracking-wider">
-                          {t.method || 'STANDARD'}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6"><span className="text-[12px] font-black uppercase text-indigo-500 dark:text-indigo-400">{t.owner}</span></td>
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-3">
-                           <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.1em] ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
-                            {t.isSold ? 'CLOS' : 'OUVERT'}
-                          </span>
-                          {t.isSold && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && (
-                            <button 
-                              onClick={() => handleRevertSale(t.id)} 
-                              className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                              title="Annuler l'encaissement"
-                            >
-                              ↩️
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                      <td className={`px-8 py-6 text-right font-black tabular-nums text-sm ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        {t.amount.toLocaleString()}€
-                      </td>
-                      <td className="px-8 py-6 text-center">
-                        <div className="flex items-center justify-center gap-3">
-                          <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all opacity-40 group-hover:opacity-100 text-lg">✏️</button>
-                          <button onClick={() => handleDelete(t.id)} className="p-3 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-xl transition-all opacity-0 group-hover:opacity-100 text-rose-500 text-lg">🗑️</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                    .map(t => {
+                      // LOGIQUE : Pour Commande Client, le montant affiché est UNIQUEMENT la commission de 10%
+                      const displayAmount = t.type === TransactionType.CLIENT_ORDER ? (t.expectedProfit || 0) : t.amount;
+                      const isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
+                      
+                      return (
+                        <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                          <td className="px-8 py-6">
+                            <div className="flex flex-col">
+                              <span className="font-black uppercase text-sm text-slate-900 dark:text-white truncate max-w-[250px] tracking-tight">{t.projectName || t.category}</span>
+                              <span className="text-[10px] text-slate-400 font-bold tabular-nums tracking-wider uppercase mt-1">{t.date}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 border-2 border-slate-100 dark:border-slate-800 px-3 py-1.5 rounded-xl uppercase tracking-wider">
+                              {t.method || 'STANDARD'}
+                            </span>
+                          </td>
+                          <td className="px-8 py-6"><span className="text-[12px] font-black uppercase text-indigo-500 dark:text-indigo-400">{t.owner}</span></td>
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-3">
+                               <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.1em] ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
+                                {t.isSold ? 'CLOS' : 'OUVERT'}
+                              </span>
+                              {t.isSold && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && (
+                                <button 
+                                  onClick={() => handleRevertSale(t.id)} 
+                                  className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                                  title="Annuler l'encaissement"
+                                >
+                                  ↩️
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className={`px-8 py-6 text-right font-black tabular-nums text-sm ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {isPositive ? '+' : '-'}{displayAmount.toLocaleString()}€
+                          </td>
+                          <td className="px-8 py-6 text-center">
+                            <div className="flex items-center justify-center gap-3">
+                              <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all opacity-40 group-hover:opacity-100 text-lg">✏️</button>
+                              <button onClick={() => handleDelete(t.id)} className="p-3 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-xl transition-all opacity-0 group-hover:opacity-100 text-rose-500 text-lg">🗑️</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
