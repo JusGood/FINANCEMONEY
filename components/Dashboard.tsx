@@ -56,7 +56,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Top Bar Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-5 rounded-xl border border-white/10 shadow-lg relative overflow-hidden">
@@ -100,6 +100,20 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         </div>
       </div>
 
+      {/* Charts - Espacement renforcé */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+           <div className="h-[200px]">
+             <BalanceTrendChart transactions={filtered} />
+           </div>
+        </div>
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-center overflow-hidden">
+           <div className="h-[200px] w-full">
+             <CategoryPieChart transactions={filtered} />
+           </div>
+        </div>
+      </div>
+
       {/* Stock Actif - Très compact */}
       {projects.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -125,20 +139,6 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
            </div>
         </div>
       )}
-
-      {/* Charts - Hauteur réduite */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-           <div className="h-[180px]">
-             <BalanceTrendChart transactions={filtered} />
-           </div>
-        </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-center">
-           <div className="h-[180px] w-full">
-             <CategoryPieChart transactions={filtered} />
-           </div>
-        </div>
-      </div>
     </div>
   );
 };

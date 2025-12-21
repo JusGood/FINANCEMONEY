@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Transaction, AccountType, TransactionType, CATEGORIES, Owner, OperationMethod } from '../types';
-import { Icons } from '../constants';
 
 interface Props {
   onAdd: (transaction: Omit<Transaction, 'id'>) => void;
@@ -11,7 +10,7 @@ interface Props {
   onCancel?: () => void;
 }
 
-const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialData, onCancel }) => {
+const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
     amount: '0',
     productPrice: '',
@@ -50,6 +49,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     }
   }, [initialData]);
 
+  // Calcul auto pour Commande Client (Basé sur prix produit)
   useEffect(() => {
     if (formData.type === TransactionType.CLIENT_ORDER && formData.productPrice) {
       const price = parseFloat(formData.productPrice);
@@ -59,6 +59,22 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
       }
     }
   }, [formData.productPrice, formData.feePercentage, formData.type]);
+
+  // LOGIQUE MULTIPLICATEUR (ex: x0.6)
+  const handleProfitChange = (val: string) => {
+    // Si l'utilisateur tape "x0.6" ou "*0.6"
+    if ((val.startsWith('x') || val.startsWith('*')) && val.length > 1) {
+      const multiplier = parseFloat(val.substring(1).replace(',', '.'));
+      const baseAmount = parseFloat(formData.type === TransactionType.CLIENT_ORDER ? formData.productPrice : formData.amount);
+      
+      if (!isNaN(multiplier) && !isNaN(baseAmount)) {
+        const result = (baseAmount * multiplier).toFixed(2);
+        setFormData({ ...formData, expectedProfit: result });
+        return;
+      }
+    }
+    setFormData({ ...formData, expectedProfit: val });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +139,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
           <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
             <p className="text-[8px] font-black uppercase text-slate-400 mb-2 tracking-[0.3em]">
-              {formData.type === TransactionType.CLIENT_ORDER ? 'PRIX DE VENTE' : 'MONTANT'}
+              {formData.type === TransactionType.CLIENT_ORDER ? 'PRIX DE VENTE' : 'MONTANT ACHAT'}
             </p>
             <input
               type="number" required step="0.01" 
@@ -137,8 +153,16 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[8px] font-black uppercase text-slate-400 ml-2">Profit Net Estimé</label>
-                <input type="number" step="0.01" value={formData.expectedProfit} onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})} className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm outline-none border border-emerald-100 dark:border-emerald-900/30" />
+                <label className="text-[8px] font-black uppercase text-slate-400 ml-2">
+                  Profit Net Estimé <span className="text-[7px] opacity-40 ml-1">(Tape x0.6 pour 60%)</span>
+                </label>
+                <input 
+                  type="text" 
+                  value={formData.expectedProfit} 
+                  onChange={(e) => handleProfitChange(e.target.value)} 
+                  className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm outline-none border border-emerald-100 dark:border-emerald-900/30" 
+                  placeholder="Montant ou x0.xx"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[8px] font-black uppercase text-slate-400 ml-2">Méthode</label>
@@ -154,7 +178,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           )}
 
           <div className="space-y-4 pt-4">
-            <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs uppercase outline-none border-none placeholder:text-slate-300" placeholder="Nom du projet..." />
+            <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs uppercase outline-none border-none placeholder:text-slate-300" placeholder="Nom de l'article / mission..." />
             <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-5 rounded-xl text-[10px] uppercase tracking-[0.3em] shadow-lg hover:shadow-indigo-200 dark:hover:shadow-none hover:-translate-y-0.5 transition-all">
               {initialData ? 'METTRE À JOUR' : 'VALIDER LE FLUX'}
             </button>
