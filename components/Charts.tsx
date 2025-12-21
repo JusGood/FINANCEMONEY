@@ -4,13 +4,14 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   Legend, PieChart, Pie, Cell
 } from 'recharts';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType, Owner } from '../types';
 
 interface Props {
   transactions: Transaction[];
+  ownerFilter?: Owner;
 }
 
-export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
+export const BalanceTrendChart: React.FC<Props> = ({ transactions, ownerFilter = Owner.GLOBAL }) => {
   const allTxs = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
   if (allTxs.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 italic text-[10px] font-black uppercase tracking-widest">En attente de données...</div>;
@@ -22,19 +23,36 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
     const dateKey = t.date;
     
     if (!t.isForecast) {
-        if (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE) {
-          runningRealBalance += t.amount;
-        } else if (t.type === TransactionType.EXPENSE || t.type === TransactionType.INVESTMENT) {
-          runningRealBalance -= t.amount;
+        if (ownerFilter === Owner.GLOBAL) {
+          if (t.type === TransactionType.TRANSFER) {
+            // Pas d'impact sur le global
+          } else if (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE) {
+            runningRealBalance += t.amount;
+          } else if (t.type === TransactionType.EXPENSE || t.type === TransactionType.INVESTMENT) {
+            runningRealBalance -= t.amount;
+          }
+        } else {
+          // Vue individuelle
+          if (t.type === TransactionType.TRANSFER) {
+            if (t.owner === ownerFilter) runningRealBalance -= t.amount;
+            if (t.toOwner === ownerFilter) runningRealBalance += t.amount;
+          } else if (t.owner === ownerFilter) {
+            if (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE) {
+              runningRealBalance += t.amount;
+            } else if (t.type === TransactionType.EXPENSE || t.type === TransactionType.INVESTMENT) {
+              runningRealBalance -= t.amount;
+            }
+          }
         }
     }
 
+    // Projection simplifiée
     const currentActiveInvestments = transactions
-      .filter(tx => !tx.isSold && tx.type === TransactionType.INVESTMENT && new Date(tx.date) <= new Date(t.date))
+      .filter(tx => tx.owner === ownerFilter && !tx.isSold && tx.type === TransactionType.INVESTMENT && new Date(tx.date) <= new Date(t.date))
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     const currentActiveProfits = transactions
-      .filter(tx => !tx.isSold && (tx.type === TransactionType.INVESTMENT || tx.type === TransactionType.CLIENT_ORDER) && new Date(tx.date) <= new Date(t.date))
+      .filter(tx => tx.owner === ownerFilter && !tx.isSold && (tx.type === TransactionType.INVESTMENT || tx.type === TransactionType.CLIENT_ORDER) && new Date(tx.date) <= new Date(t.date))
       .reduce((sum, tx) => sum + (tx.expectedProfit || 0), 0);
 
     const currentProjected = runningRealBalance + currentActiveInvestments + currentActiveProfits;
@@ -70,7 +88,6 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
             contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10px', color: '#fff' }}
             itemStyle={{ fontWeight: 'bold' }}
           />
-          <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', paddingBottom: '10px' }} />
           <Area name="Cash" type="monotone" dataKey="real" stroke="#6366f1" fill="url(#colorReal)" strokeWidth={2} />
           <Area name="Projeté" type="monotone" dataKey="projected" stroke="#10b981" strokeDasharray="4 4" fill="url(#colorProj)" strokeWidth={1.5} />
         </AreaChart>
@@ -102,7 +119,6 @@ export const CategoryPieChart: React.FC<{ transactions: Transaction[] }> = ({ tr
             ))}
           </Pie>
           <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10px' }} />
-          <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle" wrapperStyle={{ fontSize: '8px', fontWeight: '900', textTransform: 'uppercase' }} />
         </PieChart>
       </ResponsiveContainer>
     </div>

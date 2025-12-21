@@ -16,7 +16,8 @@ export enum TransactionType {
   INCOME = 'Revenu',        
   INVESTMENT = 'Achat Stock', 
   CLIENT_ORDER = 'Commande Client',
-  INITIAL_BALANCE = 'Solde Initial' 
+  INITIAL_BALANCE = 'Solde Initial',
+  TRANSFER = 'Transfert'
 }
 
 export type OperationMethod = 'FTID' | 'DNA' | 'EB' | 'LIT' | 'Standard';
@@ -32,6 +33,7 @@ export interface Transaction {
   type: TransactionType;
   account: AccountType;
   owner: Owner;
+  toOwner?: Owner; // Pour les transferts
   note: string;
   projectName?: string; 
   clientName?: string;
@@ -59,5 +61,6 @@ export const CATEGORIES = [
   'EB',
   'LIT',
   'Dépense Courante',
-  'Solde Initial'
+  'Solde Initial',
+  'Transfert Interne'
 ];

@@ -21,11 +21,12 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     type: TransactionType.CLIENT_ORDER,
     account: AccountType.BANK,
     owner: Owner.LARBI,
+    toOwner: Owner.YASSINE,
     note: '',
     projectName: '',
     clientName: '',
     isForecast: false,
-    isSold: true, // Par défaut, un revenu est considéré comme encaissé sauf si on le précise
+    isSold: true, 
     method: 'Standard' as OperationMethod
   });
 
@@ -41,6 +42,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
         type: initialData.type,
         account: initialData.account,
         owner: initialData.owner,
+        toOwner: initialData.toOwner || (initialData.owner === Owner.LARBI ? Owner.YASSINE : Owner.LARBI),
         note: initialData.note || '',
         projectName: initialData.projectName || '',
         clientName: initialData.clientName || '',
@@ -51,7 +53,6 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     }
   }, [initialData]);
 
-  // Calcul automatique de la commission de 10%
   useEffect(() => {
     if (formData.type === TransactionType.CLIENT_ORDER && formData.productPrice) {
       const clientBenefit = parseFloat(formData.productPrice);
@@ -81,18 +82,20 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     e.preventDefault();
     const isClientOrder = formData.type === TransactionType.CLIENT_ORDER;
     const isIncome = formData.type === TransactionType.INCOME;
+    const isTransfer = formData.type === TransactionType.TRANSFER;
     let finalProfit = formData.expectedProfit.toString().replace(/[x*]/g, '').replace(',', '.');
     
-    const transactionData = {
+    const transactionData: Omit<Transaction, 'id'> = {
       amount: isClientOrder ? 0 : Math.abs(parseFloat(formData.amount || '0')),
       productPrice: isClientOrder ? parseFloat(formData.productPrice) : undefined,
       feePercentage: isClientOrder ? parseFloat(formData.feePercentage) : undefined,
-      expectedProfit: isIncome ? 0 : Math.abs(parseFloat(finalProfit || '0')),
+      expectedProfit: (isIncome || isTransfer) ? 0 : Math.abs(parseFloat(finalProfit || '0')),
       date: formData.date,
-      category: formData.category,
+      category: isTransfer ? 'Transfert Interne' : formData.category,
       type: formData.type,
       account: formData.account,
       owner: formData.owner,
+      toOwner: isTransfer ? formData.toOwner : undefined,
       note: formData.note,
       projectName: formData.projectName.trim() || undefined,
       clientName: formData.clientName.trim() || undefined,
@@ -120,7 +123,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1.5">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
               <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${formData.owner === o ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'}`}>
-                {o}
+                {formData.type === TransactionType.TRANSFER ? `De ${o}` : o}
               </button>
             ))}
           </div>
@@ -128,11 +131,12 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Activité</label>
-              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType, isSold: e.target.value !== TransactionType.CLIENT_ORDER && e.target.value !== TransactionType.INVESTMENT})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType, isSold: true})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 <option value={TransactionType.CLIENT_ORDER}>Commission (Apport d'affaire)</option>
                 <option value={TransactionType.INVESTMENT}>Achat Flip (Stock personnel)</option>
                 <option value={TransactionType.INCOME}>Revenu Direct / Salaire</option>
                 <option value={TransactionType.EXPENSE}>Dépense / Frais</option>
+                <option value={TransactionType.TRANSFER}>Transfert Interne (Compte à compte)</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -141,10 +145,20 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             </div>
           </div>
 
+          {formData.type === TransactionType.TRANSFER && (
+            <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1.5 animate-in slide-in-from-top-2">
+               {[Owner.LARBI, Owner.YASSINE].map(o => (
+                <button key={o} type="button" disabled={formData.owner === o} onClick={() => setFormData({...formData, toOwner: o})} className={`flex-1 py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${formData.toOwner === o ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 disabled:opacity-20'}`}>
+                  Vers {o}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="p-12 bg-slate-950 rounded-[2.5rem] border border-white/5 text-center shadow-inner relative overflow-hidden group">
             <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-colors"></div>
             <p className="relative z-10 text-[11px] font-black uppercase text-indigo-400 mb-4 tracking-[0.5em]">
-              {formData.type === TransactionType.CLIENT_ORDER ? 'BÉNÉFICE TOTAL DU CLIENT' : 'MONTANT DE L\'OPÉRATION'}
+              {formData.type === TransactionType.CLIENT_ORDER ? 'BÉNÉFICE TOTAL DU CLIENT' : 'MONTANT DU MOUVEMENT'}
             </p>
             <div className="relative z-10 flex items-center justify-center gap-4">
                <input
@@ -158,7 +172,6 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             </div>
           </div>
 
-          {/* Option pour encaisser plus tard pour les revenus */}
           {formData.type === TransactionType.INCOME && (
              <div className="flex items-center justify-between p-8 bg-indigo-500/5 rounded-[2rem] border border-indigo-500/10">
                 <div className="space-y-1">

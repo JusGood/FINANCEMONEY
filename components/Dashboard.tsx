@@ -18,27 +18,43 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   const filtered = useMemo(() => 
     ownerFilter === Owner.GLOBAL 
       ? transactions 
-      : transactions.filter(t => t.owner === ownerFilter)
+      : transactions.filter(t => t.owner === ownerFilter || t.toOwner === ownerFilter)
   , [transactions, ownerFilter]);
 
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
     if (curr.isForecast) return acc;
-    // On ne compte dans le cash que ce qui est réellement encaissé ou sorti (isSold: true)
-    // Sauf les dépenses qui sont toujours déduites immédiatement
-    if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += curr.amount;
-    else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += curr.amount;
-    else if (curr.type === TransactionType.EXPENSE) acc.expense += curr.amount;
-    else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
-    else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
+
+    // Logique globale vs individuelle
+    if (ownerFilter === Owner.GLOBAL) {
+      if (curr.type === TransactionType.TRANSFER) return acc; // Transfert interne = 0 net
+      
+      if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += curr.amount;
+      else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += curr.amount;
+      else if (curr.type === TransactionType.EXPENSE) acc.expense += curr.amount;
+      else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
+      else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
+    } else {
+      // Vue individuelle (Larbi ou Yassine)
+      if (curr.type === TransactionType.TRANSFER) {
+        if (curr.owner === ownerFilter) acc.expense += curr.amount; // Sortie
+        if (curr.toOwner === ownerFilter) acc.income += curr.amount; // Entrée
+      } else if (curr.owner === ownerFilter) {
+        if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += curr.amount;
+        else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += curr.amount;
+        else if (curr.type === TransactionType.EXPENSE) acc.expense += curr.amount;
+        else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
+        else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
+      }
+    }
     
     return acc;
-  }, { initial: 0, income: 0, expense: 0, invested: 0 }), [filtered]);
+  }, { initial: 0, income: 0, expense: 0, invested: 0 }), [filtered, ownerFilter]);
 
   const currentCash = stats.initial + stats.income - stats.expense - stats.invested;
 
   const projects = useMemo(() => {
     return filtered
-      .filter(t => (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) && !t.isSold)
+      .filter(t => t.owner === ownerFilter && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) && !t.isSold)
       .map(t => ({
         name: t.projectName || t.category || 'Sans Nom',
         totalSpent: t.amount,
@@ -47,7 +63,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         type: t.type,
         owner: t.owner
       }));
-  }, [filtered]);
+  }, [filtered, ownerFilter]);
 
   const latentProfits = projects.reduce((sum, p) => sum + p.potentialProfit, 0);
   const activeStockValue = projects.filter(p => p.type === TransactionType.INVESTMENT).reduce((sum, p) => sum + p.totalSpent, 0);
@@ -99,13 +115,13 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                     <span className="text-[12px] font-black text-white">+{stats.initial}€</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/40 uppercase">Gains/Comms :</span>
+                    <span className="text-[10px] font-bold text-white/40 uppercase">Gains/Transferts :</span>
                     <span className="text-[12px] font-black text-emerald-400">+{stats.income}€</span>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/40 uppercase">Dépenses :</span>
+                    <span className="text-[10px] font-bold text-white/40 uppercase">Dépenses/Envois :</span>
                     <span className="text-[12px] font-black text-rose-400">-{stats.expense}€</span>
                   </div>
                   <div className="flex justify-between items-center">

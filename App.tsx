@@ -73,7 +73,7 @@ const App: React.FC = () => {
 
         await DB.updateTransactionDB(originalTxId, { ...originalTx, isSold: false });
 
-        if (originalTx.type !== TransactionType.INCOME) {
+        if (originalTx.type !== TransactionType.INCOME && originalTx.type !== TransactionType.TRANSFER) {
            const relatedIncome = transactions.find(t => 
              t.type === TransactionType.INCOME && 
              t.note?.includes(`[REF:${originalTxId}]`)
@@ -146,12 +146,9 @@ const App: React.FC = () => {
                const tx = transactions.find(t => t.id === id);
                if (!tx) return;
                
-               // Cas 1: C'est un revenu direct qui passe de "attente" à "encaissé"
                if (tx.type === TransactionType.INCOME) {
                  await DB.updateTransactionDB(id, {...tx, isSold: true, date: new Date().toISOString().split('T')[0]});
-               } 
-               // Cas 2: C'est un Flip/Commande qui génère un revenu séparé
-               else {
+               } else {
                  await DB.updateTransactionDB(id, {...tx, isSold: true});
                  await DB.saveTransaction({
                    id: Math.random().toString(36).substr(2, 9),
@@ -186,17 +183,24 @@ const App: React.FC = () => {
                     <th className="px-8 py-5">Type</th>
                     <th className="px-8 py-5">Agent</th>
                     <th className="px-8 py-5">Statut</th>
-                    <th className="px-8 py-5 text-right">Profit Net / Montant</th>
+                    <th className="px-8 py-5 text-right">Mouvement / Profit</th>
                     <th className="px-8 py-5 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {transactions
-                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
+                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
                       const displayAmount = t.type === TransactionType.CLIENT_ORDER ? (t.expectedProfit || 0) : t.amount;
-                      const isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
-                      const isActuallyReceived = t.isSold || t.type === TransactionType.EXPENSE || t.type === TransactionType.INITIAL_BALANCE;
+                      
+                      // Déterminer si c'est positif ou négatif selon la vue
+                      let isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
+                      if (t.type === TransactionType.TRANSFER) {
+                        if (activeView === Owner.GLOBAL) isPositive = true; // Neutre
+                        else isPositive = t.toOwner === activeView; // Positif si on reçoit
+                      }
+                      
+                      const isActuallyReceived = t.isSold || t.type === TransactionType.EXPENSE || t.type === TransactionType.INITIAL_BALANCE || t.type === TransactionType.TRANSFER;
 
                       return (
                         <tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group ${!isActuallyReceived ? 'opacity-60 bg-amber-500/5' : ''}`}>
@@ -207,29 +211,30 @@ const App: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-8 py-6">
-                            <span className={`text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider ${t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                            <span className={`text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500/10 text-indigo-500' : t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                               {t.type}
                             </span>
                           </td>
-                          <td className="px-8 py-6"><span className="text-[12px] font-black uppercase text-indigo-500 dark:text-indigo-400">{t.owner}</span></td>
+                          <td className="px-8 py-6">
+                            {t.type === TransactionType.TRANSFER ? (
+                              <div className="flex items-center gap-2 text-[10px] font-black uppercase">
+                                <span className="text-rose-500">{t.owner}</span>
+                                <span className="opacity-30">➜</span>
+                                <span className="text-emerald-500">{t.toOwner}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[12px] font-black uppercase text-indigo-500 dark:text-indigo-400">{t.owner}</span>
+                            )}
+                          </td>
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-3">
                                <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.1em] ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
                                 {t.isSold ? 'REÇU / CLOS' : 'EN ATTENTE'}
                               </span>
-                              {t.isSold && (t.type !== TransactionType.EXPENSE) && (
-                                <button 
-                                  onClick={() => handleRevertSale(t.id)} 
-                                  className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                                  title="Annuler"
-                                >
-                                  ↩️
-                                </button>
-                              )}
                             </div>
                           </td>
-                          <td className={`px-8 py-6 text-right font-black tabular-nums text-sm ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {isPositive ? '+' : '-'}{displayAmount.toLocaleString()}€
+                          <td className={`px-8 py-6 text-right font-black tabular-nums text-sm ${t.type === TransactionType.TRANSFER && activeView === Owner.GLOBAL ? 'text-slate-400' : isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {t.type === TransactionType.TRANSFER && activeView === Owner.GLOBAL ? '⇄ ' : isPositive ? '+' : '-'}{displayAmount.toLocaleString()}€
                           </td>
                           <td className="px-8 py-6 text-center">
                             <div className="flex items-center justify-center gap-3">
