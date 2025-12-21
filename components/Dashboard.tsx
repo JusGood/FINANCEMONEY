@@ -58,75 +58,75 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   return (
     <div className="space-y-10">
       {/* Top Bar Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-5 rounded-xl border border-white/10 shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-             <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-6 opacity-10">
+             <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
           </div>
-          <p className="text-[8px] font-black uppercase tracking-[0.3em] text-white/50 mb-1">CASH FLOW LIQUIDE</p>
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-3xl font-black tracking-tighter tabular-nums text-white italic">
+          <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50 mb-3">CASH FLOW LIQUIDE</p>
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-5xl font-black tracking-tighter tabular-nums text-white italic">
               {currentCash.toLocaleString()}
             </h2>
-            <span className="text-xs font-bold text-white/40 uppercase">EUR</span>
+            <span className="text-sm font-bold text-white/40 uppercase tracking-widest">EUR</span>
           </div>
-          <div className="mt-4 flex gap-4 border-t border-white/5 pt-4">
+          <div className="mt-8 flex gap-8 border-t border-white/10 pt-6">
              <div>
-                <p className="text-[7px] font-bold text-white/30 uppercase">Patrimoine</p>
-                <p className="text-sm font-black text-white">{totalPatrimony.toLocaleString()}€</p>
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Patrimoine</p>
+                <p className="text-lg font-black text-white">{totalPatrimony.toLocaleString()}€</p>
              </div>
              <div>
-                <p className="text-[7px] font-bold text-white/30 uppercase">Profits Attentus</p>
-                <p className="text-sm font-black text-emerald-400">+{latentProfits.toLocaleString()}€</p>
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Profits Attentus</p>
+                <p className="text-lg font-black text-emerald-400">+{latentProfits.toLocaleString()}€</p>
              </div>
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
-           <div className="flex justify-between items-center mb-2">
-             <h3 className="text-[9px] font-black tracking-widest uppercase text-slate-400 italic">Audit Vault IA</h3>
-             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[8px] font-black text-indigo-500 hover:text-indigo-400 uppercase tracking-widest">Actualiser</button>
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+           <div className="flex justify-between items-center mb-4">
+             <h3 className="text-[11px] font-black tracking-[0.3em] uppercase text-slate-400 italic">Audit Vault IA</h3>
+             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 uppercase tracking-widest px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">Actualiser</button>
            </div>
-           <div className="min-h-[40px]">
+           <div className="min-h-[60px] flex items-center">
              {aiReport ? (
-               <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 italic leading-snug">"{aiReport}"</p>
+               <p className="text-[14px] font-bold text-slate-700 dark:text-slate-200 italic leading-relaxed">"{aiReport}"</p>
              ) : (
-               <div className="flex items-center gap-2 py-2">
-                 <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                 <span className="text-[9px] font-black uppercase text-slate-300 italic">En attente d'instruction...</span>
+               <div className="flex items-center gap-3">
+                 <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest">En attente d'instruction...</span>
                </div>
              )}
            </div>
         </div>
       </div>
 
-      {/* Charts Section - Correction de hauteur */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[280px] overflow-hidden">
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[320px] overflow-hidden">
            <BalanceTrendChart transactions={filtered} />
         </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[280px] overflow-hidden flex items-center justify-center">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[320px] overflow-hidden flex items-center justify-center">
            <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
       {/* Stock Actif */}
       {projects.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm mt-6">
-           <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-             <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Opérations en cours ({projects.length})</span>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm mt-8">
+           <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+             <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Opérations en cours ({projects.length})</span>
            </div>
-           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-slate-100 dark:divide-slate-800">
+           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 divide-x divide-y divide-slate-100 dark:divide-slate-800">
              {projects.map(p => (
-               <div key={p.originalTransactionId} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 uppercase">{p.owner[0]}</span>
-                    <span className="text-[10px] font-black text-emerald-500">+{p.potentialProfit}€</span>
+               <div key={p.originalTransactionId} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-[10px] font-black px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 uppercase">{p.owner}</span>
+                    <span className="text-sm font-black text-emerald-500">+{p.potentialProfit}€</span>
                   </div>
-                  <p className="text-[10px] font-black text-slate-800 dark:text-slate-200 truncate uppercase mb-2">{p.name}</p>
+                  <p className="text-[12px] font-black text-slate-800 dark:text-slate-200 truncate uppercase mb-4 tracking-tight">{p.name}</p>
                   <button 
                     onClick={() => onConfirmSale(p.originalTransactionId!)}
-                    className="w-full text-[7px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 py-1.5 rounded hover:bg-emerald-500 hover:text-white transition-all"
+                    className="w-full text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 py-2.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
                   >
                     Encaisser
                   </button>
