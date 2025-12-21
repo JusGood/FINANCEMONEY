@@ -20,10 +20,14 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; }
-        /* Empêche le flash blanc */
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
         html.dark body { background-color: #020617; color: #f8fafc; }
         html.light body { background-color: #f8fafc; color: #0f172a; }
+        /* Scrollbar fine */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
     </style>
 <script type="importmap">
 {
@@ -42,5 +46,7 @@
 </head>
 <body class="bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
     <div id="root"></div>
+    <!-- Point d'entrée forcé si l'auto-import échoue -->
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
