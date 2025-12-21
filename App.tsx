@@ -9,7 +9,6 @@ import * as DB from './services/db';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
-  const [authMode, setAuthMode] = useState<'login' | 'config'>('login');
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -20,7 +19,7 @@ const App: React.FC = () => {
     const init = async () => {
       const isConfigured = DB.initDB();
       if (!isConfigured) {
-        setAuthMode('config');
+        // Fallback or config redirect
       } else {
         const sb = DB.getSupabase();
         if (sb) {
@@ -67,7 +66,7 @@ const App: React.FC = () => {
           <form onSubmit={async (e) => {
             e.preventDefault();
             const target = e.target as any;
-            const { data, error } = await DB.signIn(target.email.value, target.password.value);
+            const { error } = await DB.signIn(target.email.value, target.password.value);
             if (error) alert("Accès refusé");
           }} className="space-y-4">
             <input name="email" type="email" placeholder="Email" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500" required />
@@ -100,7 +99,7 @@ const App: React.FC = () => {
       ) : activeView === 'Focus' ? (
         <FocusMode owner={Owner.GLOBAL} />
       ) : (
-        <div className="space-y-6 animate-in fade-in duration-300">
+        <div className="space-y-8 animate-in fade-in duration-500">
           <Dashboard 
             transactions={transactions} 
             ownerFilter={activeView as Owner} 
@@ -120,43 +119,57 @@ const App: React.FC = () => {
           />
 
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-            <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
-              <h4 className="font-black uppercase text-[9px] tracking-widest text-slate-400">Journal d'Audit</h4>
-              <input 
-                type="text" 
-                placeholder="Filtrer..." 
-                className="bg-white dark:bg-slate-800 rounded-md px-2 py-1 text-[9px] font-bold uppercase outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-200 dark:border-slate-700 w-32 md:w-48" 
-                value={searchTerm} 
-                onChange={e => setSearchTerm(e.target.value)} 
-              />
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-3 bg-slate-50/50 dark:bg-slate-800/30">
+              <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-slate-400">Journal d'Audit</h4>
+              <div className="relative group">
+                <input 
+                  type="text" 
+                  placeholder="FILTRER LE VAULT..." 
+                  className="bg-white dark:bg-slate-950 rounded-lg px-3 py-1.5 text-[9px] font-black uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-indigo-500 border-none w-48 transition-all" 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)} 
+                />
+              </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[600px]">
+              <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[8px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-4 py-2">Mission</th>
-                    <th className="px-4 py-2">Proprio</th>
-                    <th className="px-4 py-2">Statut</th>
-                    <th className="px-4 py-2 text-right">Montant</th>
-                    <th className="px-4 py-2 text-center">Gérer</th>
+                    <th className="px-5 py-3">Mission</th>
+                    <th className="px-5 py-3">Méthode</th>
+                    <th className="px-5 py-3">Proprio</th>
+                    <th className="px-5 py-3">Statut</th>
+                    <th className="px-5 py-3 text-right">Montant</th>
+                    <th className="px-5 py-3 text-center">Gérer</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {transactions
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-4 py-2">
+                    <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                      <td className="px-5 py-3">
                         <div className="flex flex-col">
-                          <span className="font-black uppercase text-[10px] text-slate-900 dark:text-white truncate max-w-[150px]">{t.projectName || t.category}</span>
-                          <span className="text-[8px] text-slate-400 tabular-nums">{t.date}</span>
+                          <span className="font-black uppercase text-[10px] text-slate-900 dark:text-white truncate max-w-[180px]">{t.projectName || t.category}</span>
+                          <span className="text-[8px] text-slate-400 font-bold tabular-nums tracking-tighter uppercase">{t.date}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-2"><span className="text-[8px] font-black uppercase text-indigo-500">{t.owner}</span></td>
-                      <td className="px-4 py-2"><span className={`text-[7px] font-black px-1.5 py-0.5 rounded ${t.isSold ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{t.isSold ? 'CLOS' : 'OUVERT'}</span></td>
-                      <td className={`px-4 py-2 text-right font-black tabular-nums text-[11px] ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>{t.amount.toLocaleString()}€</td>
-                      <td className="px-4 py-2 text-center">
-                        <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-all">✏️</button>
+                      <td className="px-5 py-3">
+                        <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                          {t.method || 'STANDARD'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3"><span className="text-[9px] font-black uppercase text-indigo-500 dark:text-indigo-400">{t.owner}</span></td>
+                      <td className="px-5 py-3">
+                        <span className={`text-[7px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${t.isSold ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                          {t.isSold ? 'CLOS' : 'OUVERT'}
+                        </span>
+                      </td>
+                      <td className={`px-5 py-3 text-right font-black tabular-nums text-[11px] ${t.type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {t.amount.toLocaleString()}€
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all opacity-40 group-hover:opacity-100">✏️</button>
                       </td>
                     </tr>
                   ))}

@@ -13,7 +13,7 @@ interface Props {
 export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
   const allTxs = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
-  if (allTxs.length === 0) return <div className="h-72 flex items-center justify-center text-slate-400 italic font-medium">En attente de données...</div>;
+  if (allTxs.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 italic text-[10px] font-black uppercase tracking-widest">En attente de données...</div>;
 
   let runningRealBalance = 0;
   const dailyDataMap: Record<string, { date: string, real: number, projected: number, timestamp: number }> = {};
@@ -21,7 +21,6 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
   allTxs.forEach(t => {
     const dateKey = t.date;
     
-    // Calcul du cash réel (l'argent qui sort vraiment de la banque)
     if (!t.isForecast) {
         if (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE) {
           runningRealBalance += t.amount;
@@ -30,7 +29,6 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
         }
     }
 
-    // Calcul de la projection (Patrimoine : Cash + Valeur Stock + Profits)
     const currentActiveInvestments = transactions
       .filter(tx => !tx.isSold && tx.type === TransactionType.INVESTMENT && new Date(tx.date) <= new Date(t.date))
       .reduce((sum, tx) => sum + tx.amount, 0);
@@ -39,7 +37,6 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
       .filter(tx => !tx.isSold && (tx.type === TransactionType.INVESTMENT || tx.type === TransactionType.CLIENT_ORDER) && new Date(tx.date) <= new Date(t.date))
       .reduce((sum, tx) => sum + (tx.expectedProfit || 0), 0);
 
-    // Les 1300€ sont retirés du 'real' mais rajoutés ici via 'currentActiveInvestments'
     const currentProjected = runningRealBalance + currentActiveInvestments + currentActiveProfits;
 
     dailyDataMap[dateKey] = {
@@ -53,9 +50,9 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
   const data = Object.values(dailyDataMap).sort((a, b) => a.timestamp - b.timestamp);
 
   return (
-    <div className="h-80 w-full">
+    <div className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorReal" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -66,13 +63,16 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions }) => {
               <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} />
-          <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}€`} />
-          <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
-          <Legend verticalAlign="top" height={36} />
-          <Area name="Cash en Banque" type="monotone" dataKey="real" stroke="#6366f1" fill="url(#colorReal)" strokeWidth={3} />
-          <Area name="Projection (Valeur Totale)" type="monotone" dataKey="projected" stroke="#10b981" strokeDasharray="5 5" fill="url(#colorProj)" strokeWidth={2} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.1} />
+          <XAxis dataKey="date" fontSize={9} tickLine={false} axisLine={false} tick={{fill: '#94a3b8', fontWeight: 'bold'}} />
+          <YAxis fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}€`} tick={{fill: '#94a3b8', fontWeight: 'bold'}} />
+          <Tooltip 
+            contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10px', color: '#fff' }}
+            itemStyle={{ fontWeight: 'bold' }}
+          />
+          <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', paddingBottom: '10px' }} />
+          <Area name="Cash" type="monotone" dataKey="real" stroke="#6366f1" fill="url(#colorReal)" strokeWidth={2} />
+          <Area name="Projeté" type="monotone" dataKey="projected" stroke="#10b981" strokeDasharray="4 4" fill="url(#colorProj)" strokeWidth={1.5} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -90,19 +90,19 @@ export const CategoryPieChart: React.FC<{ transactions: Transaction[] }> = ({ tr
     return acc;
   }, []);
   
-  if (categoryData.length === 0) return <div className="h-64 flex items-center justify-center text-slate-400 italic text-sm">Aucune donnée</div>;
+  if (categoryData.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 italic text-[10px] font-black uppercase">Aucune donnée</div>;
 
   return (
-    <div className="h-64 w-full">
+    <div className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie data={categoryData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+        <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <Pie data={categoryData} innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value" stroke="none">
             {categoryData.map((_entry: any, index: number) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
-          <Legend />
+          <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10px' }} />
+          <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle" wrapperStyle={{ fontSize: '8px', fontWeight: '900', textTransform: 'uppercase' }} />
         </PieChart>
       </ResponsiveContainer>
     </div>
