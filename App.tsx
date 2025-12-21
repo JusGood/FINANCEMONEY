@@ -52,6 +52,19 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (confirm("Supprimer définitivement cette opération du Vault ?")) {
+      try {
+        await DB.deleteTransactionDB(id);
+        await loadTransactions();
+        setEditingTransaction(null);
+        if (activeView === 'Add') setActiveView(Owner.GLOBAL);
+      } catch (err) {
+        alert("Erreur lors de la suppression");
+      }
+    }
+  };
+
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-[10px]">
       Chargement du Vault...
@@ -93,6 +106,7 @@ const App: React.FC = () => {
             setEditingTransaction(null);
             setActiveView(d.owner);
           }} 
+          onDelete={handleDelete}
           initialData={editingTransaction} 
           onCancel={() => { setEditingTransaction(null); setActiveView(Owner.GLOBAL); }} 
         />
@@ -118,7 +132,6 @@ const App: React.FC = () => {
             }} 
           />
 
-          {/* Journal Audit - Nettoyage structurel pour éviter l'overlap */}
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors relative z-0">
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-3 bg-slate-50/50 dark:bg-slate-800/30">
               <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-slate-400">Journal d'Audit</h4>
@@ -170,7 +183,10 @@ const App: React.FC = () => {
                         {t.amount.toLocaleString()}€
                       </td>
                       <td className="px-5 py-3 text-center">
-                        <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all opacity-40 group-hover:opacity-100">✏️</button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all opacity-40 group-hover:opacity-100">✏️</button>
+                          <button onClick={() => handleDelete(t.id)} className="p-2 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-all opacity-0 group-hover:opacity-100 text-rose-500">🗑️</button>
+                        </div>
                       </td>
                     </tr>
                   ))}

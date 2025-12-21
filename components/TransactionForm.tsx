@@ -10,7 +10,7 @@ interface Props {
   onCancel?: () => void;
 }
 
-const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCancel }) => {
+const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
     amount: '0',
     productPrice: '',
@@ -62,8 +62,8 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
 
   // LOGIQUE MULTIPLICATEUR EN SUFFIXE (ex: "0.6x")
   const handleProfitChange = (val: string) => {
-    // Si l'utilisateur tape "x" ou "*" à la FIN de sa saisie
-    if (val.endsWith('x') || val.endsWith('*')) {
+    // Si l'utilisateur ajoute "x" ou "*" à la FIN de sa saisie
+    if (val.length > 1 && (val.endsWith('x') || val.endsWith('*'))) {
       const numPart = val.slice(0, -1).replace(',', '.');
       const multiplier = parseFloat(numPart);
       const baseAmount = parseFloat(
@@ -78,8 +78,6 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
         return;
       }
     }
-    
-    // Garde aussi la possibilité de taper x au début mais sans calcul auto destructif
     setFormData({ ...formData, expectedProfit: val });
   };
 
@@ -87,8 +85,8 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
     e.preventDefault();
     const isClientOrder = formData.type === TransactionType.CLIENT_ORDER;
     
-    // Nettoyage final au cas où il reste un "x"
-    let finalProfit = formData.expectedProfit.replace('x', '').replace('*', '').replace(',', '.');
+    // Nettoyage final du profit (on enlève les x accidentels)
+    let finalProfit = formData.expectedProfit.toString().replace(/[x*]/g, '').replace(',', '.');
     
     const transactionData = {
       amount: isClientOrder ? 0 : Math.abs(parseFloat(formData.amount || '0')),
@@ -172,7 +170,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
                   value={formData.expectedProfit} 
                   onChange={(e) => handleProfitChange(e.target.value)} 
                   className="w-full p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-sm outline-none border border-emerald-100 dark:border-emerald-900/30" 
-                  placeholder="Tape 0.6x pour 60%"
+                  placeholder="Tape 0.6x"
                 />
               </div>
               <div className="space-y-1.5">
@@ -193,6 +191,16 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, initialData, onCanc
             <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-5 rounded-xl text-[10px] uppercase tracking-[0.3em] shadow-lg hover:shadow-indigo-200 dark:hover:shadow-none hover:-translate-y-0.5 transition-all">
               {initialData ? 'METTRE À JOUR' : 'VALIDER LE FLUX'}
             </button>
+            
+            {initialData && onDelete && (
+              <button 
+                type="button" 
+                onClick={() => onDelete(initialData.id)}
+                className="w-full bg-rose-500/10 text-rose-500 font-black py-3 rounded-xl text-[8px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all mt-4"
+              >
+                Supprimer l'opération définitivement
+              </button>
+            )}
           </div>
         </form>
       </div>

@@ -56,7 +56,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Top Bar Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-5 rounded-xl border border-white/10 shadow-lg relative overflow-hidden">
@@ -100,19 +100,19 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         </div>
       </div>
 
-      {/* Charts Section - Assuré d'avoir une hauteur fixe et overflow-hidden */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-4">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[240px] overflow-hidden">
+      {/* Charts Section - Correction de hauteur */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[280px] overflow-hidden">
            <BalanceTrendChart transactions={filtered} />
         </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[240px] overflow-hidden flex items-center justify-center">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[280px] overflow-hidden flex items-center justify-center">
            <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
       {/* Stock Actif */}
       {projects.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm mt-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm mt-6">
            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
              <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Opérations en cours ({projects.length})</span>
            </div>
