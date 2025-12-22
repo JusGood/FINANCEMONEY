@@ -10,7 +10,7 @@ interface Props {
   onCancel?: () => void;
 }
 
-const CRYPTO_ASSETS = ['BTC', 'ETH', 'LTC', 'SOL', 'USDT', 'XRP', 'DOGE'];
+const CRYPTO_ASSETS = ['BTC', 'ETH', 'LTC', 'SOL', 'USDT', 'XRP', 'DOGE', 'ADA', 'DOT'];
 
 const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -34,7 +34,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     assetQuantity: ''
   });
 
-  // Calcul automatique du profit pour les commissions (10%)
+  // Calcul automatique du profit pour les commissions (10% par défaut)
   useEffect(() => {
     if (formData.type === TransactionType.CLIENT_ORDER && formData.productPrice) {
       const price = parseFloat(formData.productPrice);
@@ -108,112 +108,124 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      <div className="bg-white dark:bg-slate-900 p-10 md:p-14 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors">
-        <div className="flex items-center justify-between mb-10">
+      <div className="bg-white dark:bg-slate-900 p-8 md:p-12 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors">
+        <div className="flex items-center justify-between mb-8">
            <button onClick={onCancel} type="button" className="text-slate-400 font-black text-xs uppercase hover:text-slate-900 transition-colors tracking-widest">← Annuler</button>
-           <h3 className="text-base font-black uppercase tracking-[0.4em] text-slate-900 dark:text-white italic">
-            {initialData ? 'Modifier l\'Opération' : 'Nouvelle Entrée Vault'}
+           <h3 className="text-sm font-black uppercase tracking-[0.4em] text-slate-900 dark:text-white italic">
+            {initialData ? 'Editer Opération' : 'Nouveau Flux de Trésorerie'}
           </h3>
           <div className="w-10"></div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1.5">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
-              <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${formData.owner === o ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'}`}>
+              <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${formData.owner === o ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'}`}>
                 {o}
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Activité</label>
-              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                <option value={TransactionType.CLIENT_ORDER}>💼 Commission Client (10%)</option>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 italic">Activité</label>
+              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-xs border-none outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value={TransactionType.CLIENT_ORDER}>💼 Comm Client (10%)</option>
                 <option value={TransactionType.INVESTMENT}>📈 Achat Flip / Stock</option>
                 <option value={TransactionType.INCOME}>💰 Revenu Direct</option>
                 <option value={TransactionType.EXPENSE}>💸 Dépense / Frais</option>
                 <option value={TransactionType.TRANSFER}>⇄ Transfert Interne</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Compte</label>
-              <select value={formData.account} onChange={(e) => setFormData({...formData, account: e.target.value as AccountType})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                <option value={AccountType.BANK}>🏦 Compte Bancaire</option>
-                <option value={AccountType.CRYPTO}>🪙 Portefeuille Crypto</option>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 italic">Compte</label>
+              <select value={formData.account} onChange={(e) => setFormData({...formData, account: e.target.value as AccountType})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-xs border-none outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value={AccountType.BANK}>🏦 Banque</option>
+                <option value={AccountType.CRYPTO}>🪙 Crypto</option>
                 <option value={AccountType.CASH}>💵 Espèces</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 italic">Méthode</label>
+              <select value={formData.method} onChange={(e) => setFormData({...formData, method: e.target.value as OperationMethod})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-xs border-none outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="Standard">Standard</option>
+                <option value="FTID">FTID</option>
+                <option value="DNA">DNA</option>
+                <option value="EB">EB</option>
+                <option value="LIT">LIT</option>
               </select>
             </div>
           </div>
 
-          {/* Section spécifique Commissions */}
+          {/* Spécifique Commissions */}
           {isCommission && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2.5rem] animate-in fade-in slide-in-from-top-2">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase text-indigo-400 ml-4">Prix du Produit (€)</label>
-                <input type="number" step="0.01" value={formData.productPrice} onChange={(e) => setFormData({...formData, productPrice: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" placeholder="ex: 1200" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2rem] border border-indigo-100 dark:border-indigo-800/20">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-indigo-400 ml-3">Prix Produit (€)</label>
+                <input type="number" step="0.01" value={formData.productPrice} onChange={(e) => setFormData({...formData, productPrice: e.target.value})} className="w-full p-4 bg-white dark:bg-slate-900 dark:text-white rounded-xl font-black text-xs border-none outline-none" placeholder="1200" />
               </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase text-indigo-400 ml-4">Frais (%)</label>
-                <input type="number" step="0.1" value={formData.feePercentage} onChange={(e) => setFormData({...formData, feePercentage: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" />
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-indigo-400 ml-3">Frais (%)</label>
+                <input type="number" step="0.1" value={formData.feePercentage} onChange={(e) => setFormData({...formData, feePercentage: e.target.value})} className="w-full p-4 bg-white dark:bg-slate-900 dark:text-white rounded-xl font-black text-xs border-none outline-none" />
               </div>
             </div>
           )}
 
-          {/* Section spécifique Crypto */}
+          {/* Spécifique Crypto */}
           {isCrypto && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] animate-in fade-in slide-in-from-top-2">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase text-amber-500 ml-4">Actif</label>
-                <select value={formData.assetSymbol} onChange={(e) => setFormData({...formData, assetSymbol: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-amber-50 dark:bg-amber-900/10 rounded-[2rem] border border-amber-100 dark:border-amber-800/20">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-amber-500 ml-3">Choisir Crypto</label>
+                <select value={formData.assetSymbol} onChange={(e) => setFormData({...formData, assetSymbol: e.target.value})} className="w-full p-4 bg-white dark:bg-slate-900 dark:text-white rounded-xl font-black text-xs border-none outline-none">
                   {CRYPTO_ASSETS.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase text-amber-500 ml-4">Quantité</label>
-                <input type="number" step="0.000001" value={formData.assetQuantity} onChange={(e) => setFormData({...formData, assetQuantity: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" placeholder="ex: 1.7" />
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-amber-500 ml-3">Quantité (ex: 1.7)</label>
+                <input type="number" step="0.000001" value={formData.assetQuantity} onChange={(e) => setFormData({...formData, assetQuantity: e.target.value})} className="w-full p-4 bg-white dark:bg-slate-900 dark:text-white rounded-xl font-black text-xs border-none outline-none" placeholder="0.00" />
               </div>
             </div>
           )}
 
-          <div className="p-12 bg-slate-950 rounded-[2.5rem] border border-white/5 text-center shadow-inner relative overflow-hidden group">
-            <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-colors"></div>
-            <p className="relative z-10 text-[11px] font-black uppercase text-indigo-400 mb-4 tracking-[0.5em]">
-              {(isCommission || isInvestment) ? 'PROFIT ATTENDU (€)' : 'MONTANT (€)'}
+          {/* Montant Centralisé */}
+          <div className="p-10 bg-slate-950 rounded-[2.5rem] text-center border border-white/5 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-all"></div>
+            <p className="relative z-10 text-[10px] font-black uppercase text-indigo-400 mb-2 tracking-[0.4em]">
+              {(isCommission || isInvestment) ? 'Bénéfice Attendu' : 'Mouvement Cash'}
             </p>
-            <div className="relative z-10 flex items-center justify-center gap-4">
+            <div className="relative z-10 flex items-center justify-center gap-3">
                <input
                 type="number" required step="0.01" 
                 value={(isCommission || isInvestment) ? formData.expectedProfit : formData.amount}
                 onChange={(e) => setFormData({...formData, [(isCommission || isInvestment) ? 'expectedProfit' : 'amount']: e.target.value})}
-                className="w-full bg-transparent text-center text-7xl font-black text-white outline-none tabular-nums tracking-tighter"
+                className="w-full bg-transparent text-center text-6xl font-black text-white outline-none tabular-nums tracking-tighter"
                 placeholder="0.00"
               />
-              <span className="text-4xl font-black text-white/20 italic">€</span>
+              <span className="text-3xl font-black text-white/20 italic">€</span>
             </div>
-            {!isCommission && !isInvestment && !isCrypto && (
-              <p className="text-[9px] font-bold text-white/20 uppercase mt-4">Montant net débité ou crédité du Vault</p>
-            )}
           </div>
 
-          <div className="space-y-6 pt-6">
-            <div className="space-y-2">
-               <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Nom du Projet / Produit</label>
-               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-sm uppercase outline-none border-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="ex: iPhone 15 Pro Max" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+               <label className="text-[10px] font-black uppercase text-slate-400 ml-4 italic">Nom du Produit / Projet</label>
+               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs outline-none border-none" placeholder="ex: MacBook Pro" />
             </div>
-            
-            <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-              <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest italic">Opération Soldée ?</span>
-              <button type="button" onClick={() => setFormData({...formData, isSold: !formData.isSold})} className={`w-14 h-8 rounded-full relative transition-all ${formData.isSold ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${formData.isSold ? 'left-7' : 'left-1'}`}></div>
-              </button>
+            <div className="space-y-1">
+               <label className="text-[10px] font-black uppercase text-slate-400 ml-4 italic">Client (si commission)</label>
+               <input type="text" value={formData.clientName} onChange={(e) => setFormData({...formData, clientName: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-xs outline-none border-none" placeholder="Nom du client" />
             </div>
+          </div>
 
-            <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-7 rounded-[2rem] text-[13px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-all active:scale-95">
-              {initialData ? 'Mettre à jour' : 'Enregistrer dans le Vault'}
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opération réglée / Cash reçu ?</span>
+            <button type="button" onClick={() => setFormData({...formData, isSold: !formData.isSold})} className={`w-12 h-6 rounded-full relative transition-all ${formData.isSold ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${formData.isSold ? 'left-6.5' : 'left-0.5'}`}></div>
             </button>
           </div>
+
+          <button type="submit" className="w-full bg-indigo-600 text-white font-black py-6 rounded-[2rem] text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-500 transition-all active:scale-95">
+            {initialData ? 'Mettre à jour' : 'Enregistrer le Flux'}
+          </button>
         </form>
       </div>
     </div>
