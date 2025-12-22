@@ -41,8 +41,8 @@ export interface Transaction {
   isForecast?: boolean;
   isSold?: boolean; 
   method?: OperationMethod;
-  assetSymbol?: string; // Ex: LTC, BTC
-  assetQuantity?: number; // Ex: 1.7
+  assetSymbol?: string;
+  assetQuantity?: number;
 }
 
 export interface Note {
@@ -56,16 +56,6 @@ export interface Note {
 }
 
 export const CATEGORIES = [
-  'Vente Directe',
-  'Flip Stock',
-  'Service',
-  'FTID',
-  'DNA',
-  'EB',
-  'LIT',
-  'Dépense Courante',
-  'Solde Initial',
-  'Transfert Interne',
-  'Achat Crypto',
-  'Vente Crypto'
+  'Vente Directe', 'Flip Stock', 'Service', 'FTID', 'DNA', 'EB', 'LIT',
+  'Dépense Courante', 'Solde Initial', 'Transfert Interne', 'Achat Crypto', 'Vente Crypto'
 ];

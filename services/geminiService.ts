@@ -19,23 +19,27 @@ export const getFinancialHealthReport = async (transactions: Transaction[], owne
       amount: t.amount,
       profit: t.expectedProfit || 0,
       category: t.category,
-      status: t.isSold ? 'Soldé' : 'En cours'
+      method: t.method,
+      status: t.isSold ? 'Sécurisé' : 'Audit Ouvert'
     }));
 
     const prompt = `
-      Agis comme un conseiller financier expert pour ${owner === Owner.GLOBAL ? 'un duo d\'investisseurs (Larbi & Yassine)' : owner}.
-      Analyse ces données : ${JSON.stringify(summary.slice(-15))}
-      Donne un audit éclair en 3 points de maximum 10 mots chacun. Style : Froid, précis, milliardaire.
+      CONTEXTE : Vault Alpha 2027. Investisseurs Haute Fidélité : ${owner === Owner.GLOBAL ? 'Larbi & Yassine' : owner}.
+      DONNÉES : ${JSON.stringify(summary.slice(-20))}
+      MISSION : Analyse de performance radicale.
+      CONTRAINTES : 3 points précis. 10 mots max par point. 
+      TON : Froid, chirurgical, autoritaire, visionnaire. 
+      STYLE : Ne mâche pas tes mots sur le ratio profit/risque.
     `;
 
     const response = await ai.models.generateContent({
       model,
       contents: prompt,
     });
-    return response.text || "Analyse indisponible.";
+    return response.text || "ANALYSE INDISPONIBLE. GARDEZ LA DISCIPLINE.";
   } catch (error) {
-    console.error("Gemini Error:", error);
-    return "Système IA hors-ligne. Gardez la discipline.";
+    console.error("Gemini Critical Failure:", error);
+    return "TERMINAL IA HORS-LIGNE. RIGUEUR ABSOLUE REQUISE.";
   }
 };
 
@@ -43,8 +47,7 @@ export const getCryptoPrices = async (symbols: string[]): Promise<Record<string,
   if (symbols.length === 0) return {};
   try {
     const ai = getAIInstance();
-    const prompt = `Donne-moi le prix actuel en Euros (EUR) pour les cryptomonnaies suivantes : ${symbols.join(', ')}. 
-    Réponds UNIQUEMENT avec un objet JSON au format : {"SYMBOLE": PRIX_NUMÉRIQUE}. Exemple: {"LTC": 85.50}`;
+    const prompt = `PRIX TEMPS RÉEL EUR : ${symbols.join(', ')}. JSON UNIQUEMENT: {"SYMBOLE": PRIX_NUM}.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -58,8 +61,7 @@ export const getCryptoPrices = async (symbols: string[]): Promise<Record<string,
     const text = response.text || "{}";
     return JSON.parse(text.replace(/```json|```/g, ''));
   } catch (error) {
-    console.error("Crypto Price Error:", error);
-    // Fallback statique si l'IA échoue
-    return { "BTC": 92000, "ETH": 2400, "LTC": 90, "SOL": 180 };
+    console.error("Crypto Stream Error:", error);
+    return { "BTC": 95000, "ETH": 2600, "LTC": 92, "SOL": 185 };
   }
 };

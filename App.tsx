@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import TransactionForm from './components/TransactionForm';
 import { FocusMode } from './components/FocusMode';
 import * as DB from './services/db';
+import { Icons } from './constants';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -20,7 +21,7 @@ const App: React.FC = () => {
     const init = async () => {
       const isConfigured = DB.initDB();
       if (!isConfigured) {
-        // Logique de config ici si nécessaire
+        // Init logic handled elsewhere or via prompt
       } else {
         const sb = DB.getSupabase();
         if (sb) {
@@ -50,11 +51,8 @@ const App: React.FC = () => {
       setTransactions(data);
       setDbError(null);
     } catch (err: any) {
-      if (err.sql) {
-        setDbError(`Mise à jour de la base de données requise. Exécutez ce code dans le SQL Editor de Supabase :\n\n${err.sql}`);
-      } else {
-        console.error("Erreur de chargement", err);
-      }
+      if (err.sql) setDbError(err.sql);
+      else console.error("Vault Load Error", err);
     }
   };
 
@@ -64,51 +62,52 @@ const App: React.FC = () => {
       await loadTransactions();
       setActiveView(d.owner);
     } catch (err: any) {
-      if (err.sql) {
-        setDbError(`Mise à jour de la base de données requise. Exécutez ce code dans le SQL Editor de Supabase :\n\n${err.sql}`);
-      } else {
-        alert("Erreur lors de l'enregistrement");
-      }
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Supprimer définitivement cette opération du Vault ?")) {
-      try {
-        await DB.deleteTransactionDB(id);
-        await loadTransactions();
-        setEditingTransaction(null);
-        if (activeView === 'Add') setActiveView(Owner.GLOBAL);
-      } catch (err) {
-        alert("Erreur lors de la suppression");
-      }
+      if (err.sql) setDbError(err.sql);
+      else alert("Transaction Security Breach: FAILED");
     }
   };
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-xs italic">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        SYNCHRONISATION VAULT...
-      </div>
+    <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white font-black uppercase tracking-[1em] text-[11px] italic">
+      <div className="w-20 h-20 border-[6px] border-indigo-600 border-t-transparent rounded-full animate-spin mb-10 shadow-[0_0_50px_rgba(79,70,229,0.3)]"></div>
+      DÉCRYPTAGE DU VAULT ALPHA...
     </div>
   );
 
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-white/5 backdrop-blur-2xl p-12 rounded-[3.5rem] border border-white/10 shadow-2xl">
-          <h1 className="text-2xl font-black text-white italic mb-10 uppercase tracking-tighter">MILLIONAIRE <span className="text-indigo-500">2027</span></h1>
+        <div className="max-w-xl w-full bg-white/5 backdrop-blur-3xl p-20 rounded-[5rem] border border-white/10 shadow-[0_50px_150px_-30px_rgba(0,0,0,1)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 blur-[100px]"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/10 blur-[100px]"></div>
+          
+          <div className="mb-16">
+            <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">MILLIONAIRE <br/><span className="text-indigo-600">EN 2027</span></h1>
+            <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.5em] mt-6 leading-relaxed">Secure Terminal Authentication Required</p>
+          </div>
+          
           <form onSubmit={async (e) => {
             e.preventDefault();
             const target = e.target as any;
             const { error } = await DB.signIn(target.email.value, target.password.value);
-            if (error) alert("Accès refusé. Riguer obligatoire.");
-          }} className="space-y-6">
-            <input name="email" type="email" placeholder="Identifiant Vault" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
-            <input name="password" type="password" placeholder="Clé d'Accès Privée" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
-            <button type="submit" className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all hover:bg-indigo-500 active:scale-95 shadow-xl shadow-indigo-900/20">DÉVERROUILLER</button>
+            if (error) alert("Accès refusé. Riguer absolue obligatoire.");
+          }} className="space-y-8">
+            <div className="space-y-2 text-left">
+              <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.5em] ml-6">Identifiant Alpha</label>
+              <input name="email" type="email" placeholder="agent@vault.com" className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-8 text-white text-lg outline-none focus:ring-[6px] focus:ring-indigo-600/20 transition-all font-bold tracking-widest text-center" required />
+            </div>
+            <div className="space-y-2 text-left">
+              <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.5em] ml-6">Clé d'Accès</label>
+              <input name="password" type="password" placeholder="••••••••••••" className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-8 text-white text-lg outline-none focus:ring-[6px] focus:ring-indigo-600/20 transition-all font-bold tracking-widest text-center" required />
+            </div>
+            <button type="submit" className="w-full bg-indigo-600 text-white py-8 rounded-[2.5rem] font-black uppercase text-sm tracking-[0.8em] transition-all hover:bg-indigo-500 hover:scale-[1.02] shadow-[0_30px_60px_-10px_rgba(79,70,229,0.4)] active:scale-95 italic">DÉVERROUILLER</button>
           </form>
+          
+          <div className="mt-12 flex justify-center gap-6 opacity-20 grayscale">
+            <span className="text-[10px] font-black">L-AUDIT</span>
+            <span className="text-[10px] font-black">Y-PROTO</span>
+            <span className="text-[10px] font-black">B-CENTRAL</span>
+          </div>
         </div>
       </div>
     );
@@ -125,14 +124,20 @@ const App: React.FC = () => {
             setEditingTransaction(null);
             setActiveView(d.owner);
           }} 
-          onDelete={handleDelete}
+          onDelete={async (id) => {
+            if (confirm("EFFACER L'AUDIT DÉFINITIVEMENT ?")) {
+              await DB.deleteTransactionDB(id);
+              await loadTransactions();
+              setActiveView(Owner.GLOBAL);
+            }
+          }}
           initialData={editingTransaction} 
           onCancel={() => { setEditingTransaction(null); setActiveView(Owner.GLOBAL); }} 
         />
       ) : activeView === 'Focus' ? (
         <FocusMode owner={Owner.GLOBAL} />
       ) : (
-        <div className="flex flex-col gap-12 animate-in fade-in duration-500 pb-16">
+        <div className="flex flex-col gap-20 animate-in fade-in duration-1000 pb-40">
           <Dashboard 
             transactions={transactions} 
             ownerFilter={activeView as Owner} 
@@ -140,18 +145,16 @@ const App: React.FC = () => {
                const tx = transactions.find(t => t.id === id);
                if (!tx) return;
                
-               // Si c'est un Revenu direct ou déjà encaissé, on le marque simplement
                if (tx.type === TransactionType.INCOME) {
                  await DB.updateTransactionDB(id, {...tx, isSold: true});
                } else {
-                 // Pour un Stock ou Commande, on solde l'audit et on crée le Revenu correspondant
                  await DB.updateTransactionDB(id, {...tx, isSold: true});
                  await DB.saveTransaction({
                    id: Math.random().toString(36).substr(2, 9),
                    date: new Date().toISOString().split('T')[0],
                    amount: (tx.amount || 0) + (tx.expectedProfit || 0),
                    category: tx.category, type: TransactionType.INCOME, account: tx.account,
-                   owner: tx.owner, note: `Encaissement Audit [REF:${tx.id}]: ${tx.projectName}`, isSold: true, method: tx.method
+                   owner: tx.owner, note: `Audit Clos [REF:${tx.id}] : ${tx.projectName}`, isSold: true, method: tx.method
                  });
                }
                await loadTransactions();
@@ -159,102 +162,105 @@ const App: React.FC = () => {
           />
 
           {dbError && (
-            <div className="bg-rose-500/10 border border-rose-500/50 p-6 rounded-3xl text-rose-500 mb-8">
-               <h5 className="font-black uppercase text-xs tracking-widest mb-2">⚠️ MISE À JOUR VAULT REQUISE</h5>
-               <pre className="text-[10px] bg-black/20 p-4 rounded-xl whitespace-pre-wrap font-mono select-all text-white">
+            <div className="bg-rose-600 p-10 rounded-[3rem] text-white shadow-2xl animate-bounce">
+               <h5 className="font-black uppercase text-xs tracking-[0.5em] mb-4">⚠️ PROTOCOLE DE MISE À JOUR VAULT</h5>
+               <pre className="text-[11px] bg-black/40 p-6 rounded-2xl whitespace-pre-wrap font-mono select-all text-emerald-400 border border-emerald-400/20">
                  {dbError}
                </pre>
             </div>
           )}
 
-          {/* JOURNAL D'AUDIT : RESTAURATION STYLE 0.60 ET VISIBILITÉ HAUTE PERFORMANCE */}
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors relative z-0">
-            <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
-              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal des Audits Stratégiques</h4>
-              <div className="relative flex-1 max-sm:w-full max-w-sm">
-                <input 
-                  type="text" 
-                  placeholder="FILTRER PROJET / CLIENT / AGENT..." 
-                  className="bg-white dark:bg-slate-950 rounded-2xl px-6 py-3 text-[11px] font-black uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 border-none w-full transition-all placeholder:text-slate-300" 
-                  value={searchTerm} 
-                  onChange={e => setSearchTerm(e.target.value)} 
-                />
+          {/* Audit Journal Alpha - GHOST MODE 0.60 */}
+          <div className="bg-white dark:bg-slate-900 rounded-[5rem] border border-slate-200 dark:border-slate-800 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
+            <div className="px-14 py-10 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center flex-wrap gap-10">
+              <div className="space-y-1">
+                <h4 className="font-black uppercase text-[14px] tracking-[0.8em] text-slate-950 dark:text-white italic">Audit Journal Alpha</h4>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Chronologie des Flux de Capital</p>
+              </div>
+              <div className="flex-1 max-w-lg">
+                <div className="relative group">
+                   <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none opacity-30">
+                      <Icons.Pencil />
+                   </div>
+                   <input 
+                    type="text" 
+                    placeholder="RECHERCHER DOSSIER / CLIENT / AGENT..." 
+                    className="w-full bg-white dark:bg-slate-950 rounded-[2rem] pl-16 pr-8 py-5 text-[12px] font-black uppercase outline-none ring-2 ring-slate-100 dark:ring-slate-800 focus:ring-4 focus:ring-indigo-600 border-none transition-all placeholder:text-slate-300" 
+                    value={searchTerm} 
+                    onChange={e => setSearchTerm(e.target.value)} 
+                  />
+                </div>
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[850px]">
+              <table className="w-full text-left border-collapse min-w-[1200px]">
                 <thead>
-                  <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[10px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-8 py-5 tracking-widest">Dossier / Note</th>
-                    <th className="px-8 py-5 tracking-widest">Activité / Méthode</th>
-                    <th className="px-8 py-5 tracking-widest">Agent(s)</th>
-                    <th className="px-8 py-5 tracking-widest">Statut Audit</th>
-                    <th className="px-8 py-5 text-right tracking-widest">Valeur Flux</th>
-                    <th className="px-8 py-5 text-center tracking-widest">Actions</th>
+                  <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[11px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
+                    <th className="px-14 py-8 tracking-[0.4em] italic">Identification</th>
+                    <th className="px-14 py-8 tracking-[0.4em] italic">Protocole</th>
+                    <th className="px-14 py-8 tracking-[0.4em] italic text-center">Agents Responsables</th>
+                    <th className="px-14 py-8 tracking-[0.4em] italic">Audit Statut</th>
+                    <th className="px-14 py-8 text-right tracking-[0.4em] italic">Valeur</th>
+                    <th className="px-14 py-8 text-center tracking-[0.4em] italic">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {transactions
-                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView || (activeView === Owner.CRYPTO && t.account === AccountType.CRYPTO)) && (!searchTerm || (t.projectName || t.category || t.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())))
+                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView) && (!searchTerm || (t.projectName || t.category || t.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
-                      // Logique d'affichage des montants (Restauration Profit vs Mouvement)
-                      const isClientOrder = t.type === TransactionType.CLIENT_ORDER;
-                      const displayAmount = isClientOrder ? (t.expectedProfit || 0) : t.amount;
-                      
-                      let isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
-                      if (t.type === TransactionType.TRANSFER) {
-                        if (activeView === Owner.GLOBAL) isPositive = true; // Neutre en Global
-                        else isPositive = t.toOwner === activeView; 
-                      }
-                      
-                      const isActuallyReceived = t.isSold || t.type === TransactionType.EXPENSE || t.type === TransactionType.INITIAL_BALANCE || t.type === TransactionType.TRANSFER;
+                      const isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
+                      const displayAmount = t.type === TransactionType.CLIENT_ORDER ? (t.expectedProfit || 0) : t.amount;
+                      // GHOST MODE 0.60 Opacity for pending audits
+                      const isPending = !t.isSold && (t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INVESTMENT);
 
                       return (
-                        <tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group ${!isActuallyReceived ? 'opacity-60 bg-amber-500/5' : ''}`}>
-                          <td className="px-8 py-6">
+                        <tr key={t.id} className={`hover:bg-slate-50/80 dark:hover:bg-indigo-600/5 transition-all group ${isPending ? 'opacity-50 bg-amber-500/[0.03]' : ''}`}>
+                          <td className="px-14 py-10">
                             <div className="flex flex-col">
-                              <span className="font-black uppercase text-sm text-slate-900 dark:text-white truncate max-w-[250px] tracking-tight group-hover:text-indigo-600 transition-colors">{t.projectName || t.category}</span>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] text-slate-400 font-bold tabular-nums uppercase italic">{t.date}</span>
-                                {t.clientName && <span className="text-[10px] text-indigo-400 font-black uppercase tracking-wider">/ Client: {t.clientName}</span>}
+                              <span className="font-black uppercase text-[15px] text-slate-950 dark:text-white truncate max-w-[350px] tracking-tighter group-hover:text-indigo-600 transition-colors italic leading-none">{t.projectName || t.category}</span>
+                              <div className="flex items-center gap-4 mt-3">
+                                <span className="text-[10px] text-slate-400 font-black tabular-nums uppercase border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-md">{t.date}</span>
+                                {t.clientName && <span className="text-[10px] text-indigo-500 font-black uppercase tracking-[0.2em] italic">/ {t.clientName}</span>}
                               </div>
                             </div>
                           </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col gap-1.5">
-                              <span className={`w-fit text-[8px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : t.type === TransactionType.INCOME ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                          <td className="px-14 py-10">
+                            <div className="flex flex-col gap-2">
+                              <span className={`w-fit text-[10px] font-black px-5 py-2.5 rounded-2xl uppercase tracking-[0.3em] ${t.type === TransactionType.TRANSFER ? 'bg-indigo-600 text-white shadow-lg' : t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                                 {t.type} {t.method !== 'Standard' ? `[${t.method}]` : ''}
                               </span>
                               {t.account === AccountType.CRYPTO && (
-                                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic ml-1">🪙 {t.assetQuantity} {t.assetSymbol}</span>
+                                <span className="text-[11px] font-black text-amber-500 uppercase italic ml-2 tracking-widest flex items-center gap-2">🪙 {t.assetQuantity} {t.assetSymbol}</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-8 py-6">
+                          <td className="px-14 py-10">
                             {t.type === TransactionType.TRANSFER ? (
-                              <div className="flex items-center gap-2 text-[10px] font-black uppercase">
-                                <span className="text-rose-500">{t.owner}</span>
-                                <span className="opacity-30">➜</span>
-                                <span className="text-emerald-500">{t.toOwner}</span>
+                              <div className="flex items-center justify-center gap-4 text-[13px] font-black uppercase italic">
+                                <span className="text-rose-500 bg-rose-500/5 px-4 py-2 rounded-xl">{t.owner}</span>
+                                <span className="text-slate-300 animate-pulse">➜</span>
+                                <span className="text-emerald-500 bg-emerald-500/5 px-4 py-2 rounded-xl">{t.toOwner}</span>
                               </div>
                             ) : (
-                              <span className="text-[12px] font-black uppercase text-indigo-500 dark:text-indigo-400">{t.owner}</span>
+                              <div className="flex justify-center">
+                                <span className="text-[14px] font-black uppercase text-indigo-600 dark:text-indigo-400 italic bg-indigo-500/5 px-6 py-3 rounded-2xl border border-indigo-500/10 shadow-sm">{t.owner}</span>
+                              </div>
                             )}
                           </td>
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-3">
-                               <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.1em] ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'}`}>
-                                {t.isSold ? 'AUDIT CLOS' : 'HORS CAISSE'}
-                              </span>
-                            </div>
+                          <td className="px-14 py-10">
+                             <div className="flex items-center gap-3">
+                                <div className={`w-2 h-2 rounded-full ${t.isSold ? 'bg-emerald-500' : 'bg-amber-500 animate-ping'}`}></div>
+                                <span className={`text-[10px] font-black px-6 py-3 rounded-2xl uppercase tracking-[0.3em] italic ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-inner' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
+                                  {t.isSold ? 'AUDIT CLOS' : 'HORS CAISSE'}
+                                </span>
+                             </div>
                           </td>
-                          <td className={`px-8 py-6 text-right font-black tabular-nums text-sm ${t.type === TransactionType.TRANSFER && activeView === Owner.GLOBAL ? 'text-slate-400' : isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {t.type === TransactionType.TRANSFER && activeView === Owner.GLOBAL ? '⇄ ' : isPositive ? '+' : '-'}{displayAmount.toLocaleString()}€
+                          <td className={`px-14 py-10 text-right font-black tabular-nums text-2xl tracking-tighter italic ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {isPositive ? '+' : '-'}{displayAmount.toLocaleString()}€
                           </td>
-                          <td className="px-8 py-6 text-center">
-                            <div className="flex items-center justify-center gap-3">
-                              <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all opacity-40 group-hover:opacity-100 text-lg">✏️</button>
-                              <button onClick={() => handleDelete(t.id)} className="p-3 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-xl transition-all opacity-0 group-hover:opacity-100 text-rose-500 text-lg">🗑️</button>
+                          <td className="px-14 py-10 text-center">
+                            <div className="flex items-center justify-center gap-6">
+                              <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-3xl transition-all opacity-10 group-hover:opacity-100 text-2xl shadow-xl">✏️</button>
                             </div>
                           </td>
                         </tr>
