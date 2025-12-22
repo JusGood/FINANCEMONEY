@@ -1,11 +1,8 @@
 
-
 export enum Owner {
   LARBI = 'Larbi',
   YASSINE = 'Yassine',
-  GLOBAL = 'Global',
-  // Added CRYPTO to resolve property 'CRYPTO' does not exist error in Layout.tsx
-  CRYPTO = 'Crypto'
+  GLOBAL = 'Global'
 }
 
 export enum AccountType {
@@ -28,10 +25,10 @@ export type OperationMethod = 'FTID' | 'DNA' | 'EB' | 'LIT' | 'Standard';
 export interface Transaction {
   id: string;
   date: string;
-  amount: number; // Montant décaissé (0 pour commande client)
-  productPrice?: number; // Valeur de la commande client
-  feePercentage?: number; // % de commission (ex: 10%)
-  expectedProfit: number; // Profit net attendu
+  amount: number; 
+  productPrice?: number; 
+  feePercentage?: number; 
+  expectedProfit: number; 
   category: string;
   type: TransactionType;
   account: AccountType;
@@ -41,7 +38,6 @@ export interface Transaction {
   projectName?: string; 
   clientName?: string;
   isSold?: boolean; 
-  // Added isForecast to resolve property 'isForecast' does not exist error in Charts.tsx
   isForecast?: boolean;
   method?: OperationMethod;
   assetSymbol?: string;
