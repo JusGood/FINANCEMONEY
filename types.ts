@@ -1,8 +1,10 @@
 
+
 export enum Owner {
   LARBI = 'Larbi',
   YASSINE = 'Yassine',
   GLOBAL = 'Global',
+  // Added CRYPTO to resolve property 'CRYPTO' does not exist error in Layout.tsx
   CRYPTO = 'Crypto'
 }
 
@@ -15,10 +17,10 @@ export enum AccountType {
 export enum TransactionType {
   EXPENSE = 'Dépense',      
   INCOME = 'Revenu',        
-  INVESTMENT = 'Achat Stock', 
-  CLIENT_ORDER = 'Commande Client',
+  INVESTMENT = 'Achat Stock (Flip)', 
+  CLIENT_ORDER = 'Commande Client (Commission)',
   INITIAL_BALANCE = 'Solde Initial',
-  TRANSFER = 'Transfert'
+  TRANSFER = 'Virement Interne'
 }
 
 export type OperationMethod = 'FTID' | 'DNA' | 'EB' | 'LIT' | 'Standard';
@@ -26,10 +28,10 @@ export type OperationMethod = 'FTID' | 'DNA' | 'EB' | 'LIT' | 'Standard';
 export interface Transaction {
   id: string;
   date: string;
-  amount: number;
-  productPrice?: number;
-  feePercentage?: number;
-  expectedProfit?: number;
+  amount: number; // Montant décaissé (0 pour commande client)
+  productPrice?: number; // Valeur de la commande client
+  feePercentage?: number; // % de commission (ex: 10%)
+  expectedProfit: number; // Profit net attendu
   category: string;
   type: TransactionType;
   account: AccountType;
@@ -38,8 +40,9 @@ export interface Transaction {
   note: string;
   projectName?: string; 
   clientName?: string;
-  isForecast?: boolean;
   isSold?: boolean; 
+  // Added isForecast to resolve property 'isForecast' does not exist error in Charts.tsx
+  isForecast?: boolean;
   method?: OperationMethod;
   assetSymbol?: string;
   assetQuantity?: number;
@@ -57,5 +60,5 @@ export interface Note {
 
 export const CATEGORIES = [
   'Vente Directe', 'Flip Stock', 'Service', 'FTID', 'DNA', 'EB', 'LIT',
-  'Dépense Courante', 'Solde Initial', 'Transfert Interne', 'Achat Crypto', 'Vente Crypto'
+  'Dépense Courante', 'Solde Initial', 'Transfert', 'Crypto'
 ];

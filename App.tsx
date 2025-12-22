@@ -21,7 +21,7 @@ const App: React.FC = () => {
     const init = async () => {
       const isConfigured = DB.initDB();
       if (!isConfigured) {
-        // Init logic handled elsewhere
+        // Init logic 
       } else {
         const sb = DB.getSupabase();
         if (sb) {
@@ -63,14 +63,47 @@ const App: React.FC = () => {
       setActiveView(d.owner);
     } catch (err: any) {
       if (err.sql) setDbError(err.sql);
-      else alert("Transaction Failed");
+      else alert("Erreur d'enregistrement.");
     }
   };
 
+  const handleConfirmSale = async (id: string) => {
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) return;
+    
+    // Marquer l'original comme vendu
+    await DB.updateTransactionDB(id, {...tx, isSold: true});
+
+    // Créer le mouvement d'entrée de fonds
+    // Pour une commande client : on n'encaisse que le profit net
+    // Pour un investissement stock : on encaisse le capital investi + le profit
+    const incomeAmount = tx.type === TransactionType.INVESTMENT 
+      ? (tx.amount + tx.expectedProfit) 
+      : tx.expectedProfit;
+
+    await DB.saveTransaction({
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString().split('T')[0],
+      amount: 0, // Pas de dépense ici
+      expectedProfit: incomeAmount,
+      category: tx.category, 
+      type: TransactionType.INCOME, 
+      account: tx.account,
+      owner: tx.owner, 
+      note: `Encaissé : ${tx.projectName || tx.category}`, 
+      isSold: true, 
+      method: tx.method,
+      assetSymbol: tx.assetSymbol,
+      assetQuantity: tx.assetQuantity // Si profit reçu en crypto, on garde la trace
+    });
+
+    await loadTransactions();
+  };
+
   if (loading) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white font-black uppercase tracking-[1em] text-[10px] italic">
-      <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      Chargement...
+    <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-xs italic">
+      <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+      Chargement du Vault...
     </div>
   );
 
@@ -87,7 +120,7 @@ const App: React.FC = () => {
           }} className="space-y-5">
             <input name="email" type="email" placeholder="IDENTIFIANT" className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-bold uppercase" required />
             <input name="password" type="password" placeholder="MOT DE PASSE" className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-bold uppercase" required />
-            <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black uppercase text-[11px] tracking-widest transition-all hover:bg-indigo-500 shadow-xl">S'IDENTIFIER</button>
+            <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black uppercase text-[11px] tracking-widest transition-all hover:bg-indigo-500 shadow-xl">Se connecter</button>
           </form>
         </div>
       </div>
@@ -122,30 +155,19 @@ const App: React.FC = () => {
           <Dashboard 
             transactions={transactions} 
             ownerFilter={activeView as Owner} 
-            onConfirmSale={async (id) => {
-               const tx = transactions.find(t => t.id === id);
-               if (!tx) return;
-               
-               if (tx.type === TransactionType.INCOME) {
-                 await DB.updateTransactionDB(id, {...tx, isSold: true});
-               } else {
-                 await DB.updateTransactionDB(id, {...tx, isSold: true});
-                 await DB.saveTransaction({
-                   id: Math.random().toString(36).substr(2, 9),
-                   date: new Date().toISOString().split('T')[0],
-                   amount: (tx.amount || 0) + (tx.expectedProfit || 0),
-                   category: tx.category, type: TransactionType.INCOME, account: tx.account,
-                   owner: tx.owner, note: `Clôture de : ${tx.projectName || tx.category}`, isSold: true, method: tx.method
-                 });
-               }
-               await loadTransactions();
-            }} 
+            onConfirmSale={handleConfirmSale} 
           />
 
-          {/* Journal des transactions dense */}
+          {dbError && (
+            <div className="bg-rose-500 p-6 rounded-2xl text-white shadow-lg text-[10px]">
+               <h5 className="font-black uppercase tracking-widest mb-2">MISE À JOUR REQUIS</h5>
+               <pre className="p-3 bg-black/20 rounded-lg whitespace-pre-wrap font-mono select-all overflow-x-auto">{dbError}</pre>
+            </div>
+          )}
+
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
-              <h4 className="font-black uppercase text-[10px] tracking-widest text-slate-400">Journal des flux</h4>
+              <h4 className="font-black uppercase text-[10px] tracking-widest text-slate-400">Journal des Flux</h4>
               <div className="flex-1 max-w-xs ml-4">
                 <input 
                   type="text" 
@@ -162,9 +184,9 @@ const App: React.FC = () => {
                   <tr className="bg-slate-50/30 dark:bg-slate-800/10 text-slate-400 text-[9px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
                     <th className="px-6 py-3">Libellé</th>
                     <th className="px-6 py-3">Type</th>
-                    <th className="px-6 py-3 text-center">Intervenants</th>
+                    <th className="px-6 py-3 text-center">Agents</th>
                     <th className="px-6 py-3">Statut</th>
-                    <th className="px-6 py-3 text-right">Montant</th>
+                    <th className="px-6 py-3 text-right">Profit Net</th>
                     <th className="px-6 py-3 text-center">Action</th>
                   </tr>
                 </thead>
@@ -173,7 +195,7 @@ const App: React.FC = () => {
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView) && (!searchTerm || (t.projectName || t.category || t.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
                       const isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
-                      const displayAmount = t.type === TransactionType.CLIENT_ORDER ? (t.expectedProfit || 0) : t.amount;
+                      const displayAmount = (t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) ? t.expectedProfit : t.amount;
                       const isPending = !t.isSold && (t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INVESTMENT);
 
                       return (
@@ -181,7 +203,7 @@ const App: React.FC = () => {
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="font-black uppercase text-[11px] text-slate-900 dark:text-white truncate max-w-[250px] italic">{t.projectName || t.category}</span>
-                              <span className="text-[9px] text-slate-400 font-bold tabular-nums mt-0.5">{t.date} {t.clientName ? ` / ${t.clientName}` : ''}</span>
+                              <span className="text-[9px] text-slate-400 font-bold mt-0.5">{t.date} {t.clientName ? ` / ${t.clientName}` : ''}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -204,7 +226,7 @@ const App: React.FC = () => {
                           </td>
                           <td className="px-6 py-4">
                              <span className={`text-[8px] font-bold px-2 py-0.5 rounded uppercase ${t.isSold ? 'text-emerald-500' : 'text-amber-500'}`}>
-                                {t.isSold ? 'Réçu' : 'En attente'}
+                                {t.isSold ? 'Encaissé' : 'En attente'}
                              </span>
                           </td>
                           <td className={`px-6 py-4 text-right font-black tabular-nums text-xs ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
