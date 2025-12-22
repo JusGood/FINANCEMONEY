@@ -15,7 +15,6 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   const [loadingReport, setLoadingReport] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [cryptoPrices, setCryptoPrices] = useState<Record<string, number>>({});
-  const [loadingPrices, setLoadingPrices] = useState(false);
 
   const filtered = useMemo(() => 
     ownerFilter === Owner.GLOBAL 
@@ -37,21 +36,17 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     return holdings;
   }, [filtered, ownerFilter]);
 
-  // Récupération des prix au chargement ou au changement de filtre
   useEffect(() => {
     const fetchPrices = async () => {
       const symbols = Object.keys(cryptoHoldings);
       if (symbols.length > 0) {
-        setLoadingPrices(true);
         const prices = await getCryptoPrices(symbols);
         setCryptoPrices(prices);
-        setLoadingPrices(false);
       }
     };
     fetchPrices();
   }, [cryptoHoldings]);
 
-  // Explicitly casting Object.entries to [string, number][] to fix arithmetic operation type errors
   const cryptoValue = useMemo(() => {
     return (Object.entries(cryptoHoldings) as [string, number][]).reduce((sum, [symbol, qty]) => {
       return sum + (qty * (cryptoPrices[symbol] || 0));
@@ -60,7 +55,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
     if (curr.isForecast) return acc;
-    if (curr.account === AccountType.CRYPTO) return acc; // Géré séparément par la valeur actuelle
+    if (curr.account === AccountType.CRYPTO) return acc;
 
     if (ownerFilter === Owner.GLOBAL) {
       if (curr.type === TransactionType.TRANSFER) return acc;
@@ -89,12 +84,14 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   const projects = useMemo(() => {
     return filtered
-      .filter(t => t.owner === ownerFilter && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) && !t.isSold)
+      .filter(t => (ownerFilter === Owner.GLOBAL || t.owner === ownerFilter) && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && !t.isSold)
       .map(t => ({
         name: t.projectName || t.category || 'Sans Nom',
-        potentialProfit: t.type === TransactionType.INCOME ? t.amount : (t.expectedProfit || 0),
+        potentialProfit: t.expectedProfit || 0,
+        invested: t.amount,
         originalTransactionId: t.id,
-        type: t.type
+        type: t.type,
+        owner: t.owner
       }));
   }, [filtered, ownerFilter]);
 
@@ -110,28 +107,21 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   return (
     <div className="space-y-10">
-      {/* Top Bar Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none z-0">
-             <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
-          </div>
-          
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-3">
               <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">FORTUNE GLOBALE (FIAT + CRYPTO)</p>
-              <button onClick={() => setShowDetails(!showDetails)} className="text-[10px] font-black bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl border border-white/10 transition-all">
+              <button onClick={() => setShowDetails(!showDetails)} className="text-[10px] font-black bg-white/10 text-white px-4 py-2 rounded-xl border border-white/10">
                 {showDetails ? 'MASQUER' : 'DÉTAILS'}
               </button>
             </div>
-
             <div className="flex items-baseline gap-3">
               <h2 className="text-5xl font-black tracking-tighter tabular-nums text-white italic">
                 {currentTotalCash.toLocaleString()}
               </h2>
               <span className="text-sm font-bold text-white/40 uppercase tracking-widest">EUR</span>
             </div>
-
             <div className="mt-8 flex gap-8 border-t border-white/10 pt-6">
                <div>
                   <p className="text-[10px] font-black text-white/30 uppercase mb-1">CASH FIAT</p>
@@ -142,12 +132,10 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                   <p className="text-lg font-black text-emerald-400">+{cryptoValue.toLocaleString()}€</p>
                </div>
             </div>
-            
             {showDetails && (
               <div className="mt-6 p-4 bg-black/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
-                 <p className="text-[9px] font-black text-white/40 uppercase mb-3 tracking-widest">Holdings Actuels</p>
+                 <p className="text-[9px] font-black text-white/40 uppercase mb-3 tracking-widest italic">Cryptos en Possession</p>
                  <div className="space-y-2">
-                   {/* Explicitly casting Object.entries to fix toFixed and arithmetic operation errors on qty */}
                    {(Object.entries(cryptoHoldings) as [string, number][]).map(([symbol, qty]) => (
                      <div key={symbol} className="flex justify-between items-center text-xs">
                         <span className="text-white/60 font-bold">{symbol}</span>
@@ -163,37 +151,32 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
            <div className="flex justify-between items-center mb-4">
-             <h3 className="text-[11px] font-black tracking-[0.3em] uppercase text-slate-400 italic">Audit Vault IA</h3>
-             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 uppercase tracking-widest px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">Analyses</button>
+             <h3 className="text-[11px] font-black tracking-[0.3em] uppercase text-slate-400 italic">Analyse Stratégique Vault</h3>
+             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 uppercase px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">Actualiser</button>
            </div>
            <div className="min-h-[60px] flex items-center">
              {aiReport ? (
                <p className="text-[14px] font-bold text-slate-700 dark:text-slate-200 italic leading-relaxed">"{aiReport}"</p>
              ) : (
-               <div className="flex items-center gap-3">
-                 <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest">Extraction des données...</span>
-               </div>
+               <p className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest animate-pulse">En attente d'instruction...</p>
              )}
            </div>
         </div>
       </div>
 
-      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[320px] overflow-hidden">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 h-[320px]">
            <BalanceTrendChart transactions={filtered} />
         </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative h-[320px] overflow-hidden flex items-center justify-center">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 h-[320px] flex items-center justify-center">
            <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
-      {/* Opérations Actives */}
       {projects.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm mt-8">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
              <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Attentes d'Encaissement ({projects.length})</span>
            </div>
@@ -201,13 +184,13 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
              {projects.map(p => (
                <div key={p.originalTransactionId} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
                   <div className="flex justify-between items-start mb-3">
-                    <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${p.type === TransactionType.INCOME ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600' : 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600'}`}>
-                      {p.type === TransactionType.INCOME ? 'REVENU' : 'DOSSIER'}
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                      {p.type === TransactionType.INVESTMENT ? 'FLIP' : 'COMM'}
                     </span>
                     <span className="text-sm font-black text-emerald-500">+{p.potentialProfit}€</span>
                   </div>
                   <p className="text-[12px] font-black text-slate-800 dark:text-slate-200 truncate uppercase mb-4 tracking-tight">{p.name}</p>
-                  <button onClick={() => onConfirmSale(p.originalTransactionId!)} className="w-full text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 py-2.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Encaisser</button>
+                  <button onClick={() => onConfirmSale(p.originalTransactionId!)} className="w-full text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white py-2.5 rounded-xl hover:bg-emerald-500 transition-all">Encaisser</button>
                </div>
              ))}
            </div>
