@@ -2,7 +2,7 @@
 import React from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Legend, PieChart, Pie, Cell
+  PieChart, Pie, Cell
 } from 'recharts';
 import { Transaction, TransactionType, Owner } from '../types';
 
@@ -14,7 +14,7 @@ interface Props {
 export const BalanceTrendChart: React.FC<Props> = ({ transactions, ownerFilter = Owner.GLOBAL }) => {
   const allTxs = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
-  if (allTxs.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 italic text-[10px] font-black uppercase tracking-widest">En attente de données...</div>;
+  if (allTxs.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 italic text-[9px] font-black uppercase tracking-widest">En attente d'audit...</div>;
 
   let runningRealBalance = 0;
   const dailyDataMap: Record<string, { date: string, real: number, projected: number, timestamp: number }> = {};
@@ -25,14 +25,15 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions, ownerFilter =
     if (!t.isForecast) {
         if (ownerFilter === Owner.GLOBAL) {
           if (t.type === TransactionType.TRANSFER) {
-            // Pas d'impact sur le global
+            // No global impact
           } else if (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE) {
             runningRealBalance += t.amount;
           } else if (t.type === TransactionType.EXPENSE || t.type === TransactionType.INVESTMENT) {
             runningRealBalance -= t.amount;
+          } else if (t.type === TransactionType.CLIENT_ORDER && t.isSold) {
+             runningRealBalance += (t.expectedProfit || 0);
           }
         } else {
-          // Vue individuelle
           if (t.type === TransactionType.TRANSFER) {
             if (t.owner === ownerFilter) runningRealBalance -= t.amount;
             if (t.toOwner === ownerFilter) runningRealBalance += t.amount;
@@ -41,18 +42,19 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions, ownerFilter =
               runningRealBalance += t.amount;
             } else if (t.type === TransactionType.EXPENSE || t.type === TransactionType.INVESTMENT) {
               runningRealBalance -= t.amount;
+            } else if (t.type === TransactionType.CLIENT_ORDER && t.isSold) {
+               runningRealBalance += (t.expectedProfit || 0);
             }
           }
         }
     }
 
-    // Projection simplifiée
     const currentActiveInvestments = transactions
-      .filter(tx => tx.owner === ownerFilter && !tx.isSold && tx.type === TransactionType.INVESTMENT && new Date(tx.date) <= new Date(t.date))
+      .filter(tx => (ownerFilter === Owner.GLOBAL || tx.owner === ownerFilter) && !tx.isSold && tx.type === TransactionType.INVESTMENT && new Date(tx.date) <= new Date(t.date))
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     const currentActiveProfits = transactions
-      .filter(tx => tx.owner === ownerFilter && !tx.isSold && (tx.type === TransactionType.INVESTMENT || tx.type === TransactionType.CLIENT_ORDER) && new Date(tx.date) <= new Date(t.date))
+      .filter(tx => (ownerFilter === Owner.GLOBAL || tx.owner === ownerFilter) && !tx.isSold && (tx.type === TransactionType.INVESTMENT || tx.type === TransactionType.CLIENT_ORDER) && new Date(tx.date) <= new Date(t.date))
       .reduce((sum, tx) => sum + (tx.expectedProfit || 0), 0);
 
     const currentProjected = runningRealBalance + currentActiveInvestments + currentActiveProfits;
@@ -70,26 +72,26 @@ export const BalanceTrendChart: React.FC<Props> = ({ transactions, ownerFilter =
   return (
     <div className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 30, right: 10, left: -25, bottom: 0 }}>
           <defs>
             <linearGradient id="colorReal" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
               <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="colorProj" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+              <stop offset="5%" stopColor="#10b981" stopOpacity={0.05}/>
               <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.1} />
-          <XAxis dataKey="date" fontSize={9} tickLine={false} axisLine={false} tick={{fill: '#94a3b8', fontWeight: 'bold'}} />
-          <YAxis fontSize={9} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}€`} tick={{fill: '#94a3b8', fontWeight: 'bold'}} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.05} />
+          <XAxis dataKey="date" fontSize={8} tickLine={false} axisLine={false} tick={{fill: '#94a3b8', fontWeight: 700}} />
+          <YAxis fontSize={8} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}€`} tick={{fill: '#94a3b8', fontWeight: 700}} />
           <Tooltip 
-            contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10px', color: '#fff' }}
-            itemStyle={{ fontWeight: 'bold' }}
+            contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', fontSize: '9px', color: '#fff' }}
+            itemStyle={{ fontWeight: 'black', padding: '2px 0' }}
           />
-          <Area name="Cash" type="monotone" dataKey="real" stroke="#6366f1" fill="url(#colorReal)" strokeWidth={2} />
-          <Area name="Projeté" type="monotone" dataKey="projected" stroke="#10b981" strokeDasharray="4 4" fill="url(#colorProj)" strokeWidth={1.5} />
+          <Area name="CASH" type="monotone" dataKey="real" stroke="#6366f1" fill="url(#colorReal)" strokeWidth={1.5} />
+          <Area name="PROJ" type="monotone" dataKey="projected" stroke="#10b981" strokeDasharray="4 4" fill="url(#colorProj)" strokeWidth={1} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -107,18 +109,18 @@ export const CategoryPieChart: React.FC<{ transactions: Transaction[] }> = ({ tr
     return acc;
   }, []);
   
-  if (categoryData.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 italic text-[10px] font-black uppercase">Aucune donnée</div>;
+  if (categoryData.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 italic text-[8px] font-black uppercase">Pas d'audit</div>;
 
   return (
     <div className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-          <Pie data={categoryData} innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value" stroke="none">
+        <PieChart>
+          <Pie data={categoryData} innerRadius="65%" outerRadius="85%" paddingAngle={3} dataKey="value" stroke="none">
             {categoryData.map((_entry: any, index: number) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10px' }} />
+          <Tooltip contentStyle={{ backgroundColor: '#020617', border: 'none', borderRadius: '12px', fontSize: '9px' }} />
         </PieChart>
       </ResponsiveContainer>
     </div>

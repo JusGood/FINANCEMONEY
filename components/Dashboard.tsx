@@ -3,7 +3,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, TransactionType, Owner, AccountType } from '../types';
 import { BalanceTrendChart, CategoryPieChart } from './Charts';
 import { getFinancialHealthReport, getCryptoPrices } from '../services/geminiService';
-// Fix: Import Icons from constants to resolve "Cannot find name 'Icons'" errors
 import { Icons } from '../constants';
 
 interface Props {
@@ -28,7 +27,11 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     const holdings: Record<string, number> = {};
     filtered.forEach(t => {
       if (t.account === AccountType.CRYPTO && t.assetSymbol && t.assetQuantity) {
-        const isIncoming = (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE || (t.type === TransactionType.TRANSFER && t.toOwner === ownerFilter));
+        // Correct logic for crypto transfers/income
+        const isIncoming = (
+          (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE || t.type === TransactionType.CLIENT_ORDER) ||
+          (t.type === TransactionType.TRANSFER && t.toOwner === ownerFilter)
+        );
         const qty = isIncoming ? t.assetQuantity : -t.assetQuantity;
         holdings[t.assetSymbol] = (holdings[t.assetSymbol] || 0) + qty;
       }
@@ -65,6 +68,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
       else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
     } else {
+      // Precise Individual view accounting for transfers
       if (curr.type === TransactionType.TRANSFER) {
         if (curr.owner === ownerFilter) acc.expense += curr.amount;
         if (curr.toOwner === ownerFilter) acc.income += curr.amount;
@@ -86,7 +90,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     return filtered
       .filter(t => (ownerFilter === Owner.GLOBAL || t.owner === ownerFilter) && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && !t.isSold)
       .map(t => ({
-        name: t.projectName || t.category || 'Sans Nom',
+        name: t.projectName || t.category || 'Dossier Anonyme',
         potentialProfit: t.expectedProfit || 0,
         investedAmount: t.amount,
         id: t.id,
@@ -104,161 +108,125 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   };
 
   return (
-    <div className="space-y-16 animate-in fade-in duration-1000">
-      {/* Header Stat Alpha */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 bg-slate-950 p-12 md:p-20 rounded-[4.5rem] border border-white/10 shadow-[0_60px_100px_-30px_rgba(0,0,0,0.6)] relative overflow-hidden group transition-all duration-700">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 blur-[150px] rounded-full group-hover:bg-indigo-600/20 transition-all duration-1000"></div>
+    <div className="space-y-6 animate-in fade-in duration-700">
+      {/* High Density Fortune Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-slate-950 p-8 rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/10 blur-[100px] rounded-full"></div>
           <div className="relative z-10">
-            <div className="flex justify-between items-start mb-10">
-              <div className="space-y-2">
-                <p className="text-[11px] font-black uppercase tracking-[0.8em] text-white/30 italic leading-none">ÉTAT DES ACTIFS RÉELS</p>
-                <div className="h-1 w-20 bg-indigo-600 rounded-full"></div>
-              </div>
-              <button onClick={() => setShowDetails(!showDetails)} className="text-[10px] font-black bg-white/5 text-white/40 px-8 py-4 rounded-2xl border border-white/5 hover:bg-white/10 hover:text-white transition-all tracking-[0.3em] uppercase">Vérifier l'Audit</button>
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-[9px] font-black uppercase tracking-[0.5em] text-white/40 italic">SOLDE NET CONSOLIDÉ</p>
+              <button onClick={() => setShowDetails(!showDetails)} className="text-[9px] font-bold bg-white/5 text-white/50 px-4 py-2 rounded-lg border border-white/5 hover:bg-white/10 hover:text-white transition-all">
+                {showDetails ? 'MASQUER' : 'DÉTAILS'}
+              </button>
             </div>
             
-            <div className="flex items-baseline gap-6 mb-16">
-              <h2 className="text-8xl font-black tracking-tighter tabular-nums text-white italic drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]">
-                {currentTotalCash.toLocaleString()}
+            <div className="flex items-baseline gap-3 mb-10">
+              <h2 className="text-5xl font-black tracking-tighter tabular-nums text-white italic drop-shadow-xl">
+                {currentTotalCash.toLocaleString('fr-FR')}
               </h2>
-              <span className="text-2xl font-bold text-white/20 uppercase tracking-[0.4em]">EUR</span>
+              <span className="text-sm font-bold text-white/20 tracking-widest uppercase">EUR</span>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 border-t border-white/5 pt-12">
-               <div className="space-y-2">
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">LIQUIDITÉS FIAT</p>
-                  <p className="text-3xl font-black text-white">{fiatCash.toLocaleString()} <span className="text-sm text-white/30 italic">€</span></p>
+            <div className="grid grid-cols-3 gap-6 border-t border-white/5 pt-8">
+               <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">CASH</p>
+                  <p className="text-lg font-black text-white">{fiatCash.toLocaleString('fr-FR')}€</p>
                </div>
-               <div className="space-y-2">
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">VALEUR CRYPTO</p>
-                  <p className="text-3xl font-black text-amber-500">+{cryptoValue.toLocaleString()} <span className="text-sm text-amber-500/30 italic">€</span></p>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">CRYPTO</p>
+                  <p className="text-lg font-black text-amber-500">+{cryptoValue.toLocaleString('fr-FR')}€</p>
                </div>
-               <div className="space-y-2">
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">MARGES EN AUDIT</p>
-                  <p className="text-3xl font-black text-indigo-400">
-                    {pendingItems.reduce((sum, p) => sum + p.potentialProfit, 0).toLocaleString()} <span className="text-sm text-indigo-400/30 italic">€</span>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">AUDITS</p>
+                  <p className="text-lg font-black text-indigo-400">
+                    +{pendingItems.reduce((sum, p) => sum + p.potentialProfit, 0).toLocaleString('fr-FR')}€
                   </p>
                </div>
             </div>
 
             {showDetails && (
-              <div className="mt-12 p-10 bg-white/5 backdrop-blur-3xl rounded-[3.5rem] border border-white/5 animate-in fade-in zoom-in-95 duration-500 shadow-2xl">
-                 <p className="text-[11px] font-black text-white/40 uppercase mb-8 tracking-[0.5em] italic">Répartition du Portefeuille Actif</p>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                   {(Object.entries(cryptoHoldings) as [string, number][]).map(([symbol, qty]) => (
-                     <div key={symbol} className="p-6 bg-black/40 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all group/asset">
-                        <div className="flex justify-between items-center mb-4">
-                           <span className="text-white font-black text-xs tracking-widest">{symbol}</span>
-                           <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] opacity-30 group-hover/asset:opacity-100 transition-all">🪙</span>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xl font-black text-white tabular-nums">{qty.toFixed(4)}</p>
-                          <p className="text-[11px] text-emerald-500 font-black italic">≈ {(qty * (cryptoPrices[symbol] || 0)).toLocaleString()}€</p>
-                        </div>
-                     </div>
-                   ))}
-                 </div>
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in zoom-in-95">
+                 {(Object.entries(cryptoHoldings) as [string, number][]).filter(([_,q])=>q>0).map(([symbol, qty]) => (
+                   <div key={symbol} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center">
+                      <span className="text-white/40 font-black text-[9px]">{symbol}</span>
+                      <div className="text-right">
+                        <span className="block text-xs font-black text-white">{qty.toFixed(4)}</span>
+                        <span className="text-[9px] text-emerald-500 font-bold">≈ {(qty * (cryptoPrices[symbol] || 0)).toLocaleString('fr-FR')}€</span>
+                      </div>
+                   </div>
+                 ))}
               </div>
             )}
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-12 rounded-[4rem] border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-xl relative overflow-hidden group">
-           <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-indigo-500/5 blur-[120px] rounded-full"></div>
-           <div className="relative z-10 h-full flex flex-col">
-             <div className="flex justify-between items-center mb-10">
-               <h3 className="text-[11px] font-black tracking-[0.6em] uppercase text-slate-400 italic">Financial Health AI</h3>
-               <button onClick={fetchAiReport} disabled={loadingReport} className="p-3 bg-slate-950 text-white rounded-2xl hover:bg-indigo-600 transition-all">
-                  {loadingReport ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <Icons.Plus />}
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm relative overflow-hidden">
+           <div className="relative z-10 flex flex-col h-full">
+             <div className="flex justify-between items-center mb-6">
+               <h3 className="text-[9px] font-black tracking-[0.4em] uppercase text-slate-400 italic">CONSEILLER IA ALPHA</h3>
+               <button onClick={fetchAiReport} disabled={loadingReport} className="text-[9px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50">
+                  {loadingReport ? 'ANALYSANT...' : 'GÉNÉRER AUDIT'}
                </button>
              </div>
-             <div className="flex-1 flex flex-col justify-center">
+             <div className="flex-1 flex items-center">
                {aiReport ? (
-                 <div className="space-y-6">
-                   {aiReport.split('\n').map((line, i) => (
-                     <p key={i} className="text-xl font-bold text-slate-900 dark:text-white italic leading-tight border-l-[6px] border-indigo-600 pl-8 py-1">{line}</p>
-                   ))}
-                 </div>
+                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100 italic leading-snug border-l-4 border-indigo-600 pl-4">{aiReport}</p>
                ) : (
-                 <div className="flex flex-col items-center text-center space-y-4">
-                   <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-3xl flex items-center justify-center text-3xl animate-bounce">🤖</div>
-                   <p className="text-[12px] font-black uppercase text-slate-300 italic tracking-[0.3em]">IA Prête pour l'audit stratégique</p>
+                 <div className="flex items-center gap-3">
+                   <div className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></div>
+                   <span className="text-[9px] font-black uppercase text-slate-300 italic tracking-[0.2em]">IA en attente d'instruction...</span>
                  </div>
                )}
              </div>
-             <p className="mt-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] opacity-50">Dernière Mise à jour : {new Date().toLocaleTimeString()}</p>
            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-12 rounded-[4rem] border border-slate-200 dark:border-slate-800 h-[500px] shadow-sm relative overflow-hidden transition-all hover:shadow-2xl">
-           <div className="flex justify-between items-center mb-10">
-             <span className="text-[10px] font-black uppercase tracking-[0.6em] text-slate-300 italic">Trajectoire du Patrimoine</span>
-             <div className="flex gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Cash</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full border-2 border-emerald-500"></div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Proj.</span>
-                </div>
-             </div>
-           </div>
+      {/* Charts - Compact but informative */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 h-[280px] shadow-sm relative">
+           <span className="absolute top-6 left-8 text-[8px] font-black text-slate-300 uppercase tracking-widest">TRAJECTOIRE VAULT</span>
            <BalanceTrendChart transactions={filtered} ownerFilter={ownerFilter} />
         </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-12 rounded-[4rem] border border-slate-200 dark:border-slate-800 h-[500px] flex flex-col shadow-sm transition-all hover:shadow-2xl">
-           <span className="text-[10px] font-black uppercase tracking-[0.6em] text-slate-300 italic mb-12">Architecture des Flux</span>
-           <div className="flex-1 flex items-center justify-center">
-             <CategoryPieChart transactions={filtered} />
-           </div>
-           <div className="mt-8 flex flex-wrap justify-center gap-4">
-              {['FTID', 'DNA', 'EB', 'LIT'].map(m => (
-                <span key={m} className="text-[9px] font-black bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl text-slate-500 uppercase tracking-[0.2em]">{m}</span>
-              ))}
-           </div>
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 h-[280px] flex flex-col items-center shadow-sm">
+           <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-4">REPARTITION FLUX</span>
+           <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
-      {/* Audit Center Alpha */}
+      {/* Pending Audits - Grid Center */}
       {pendingItems.length > 0 && (
-        <div className="space-y-10 pt-8">
-           <div className="flex items-center gap-6 px-12">
-             <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
-             <span className="text-[12px] font-black uppercase text-slate-900 dark:text-white tracking-[0.8em] italic whitespace-nowrap">AUDITS GHOST MODE ({pendingItems.length})</span>
-             <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
+        <div className="space-y-4 pt-4">
+           <div className="flex items-center gap-4 px-4">
+             <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em] italic whitespace-nowrap">AUDITS EN COURS ({pendingItems.length})</span>
+             <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
            </div>
            
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
              {pendingItems.map(p => (
-               <div key={p.id} className="bg-white dark:bg-slate-900 p-10 rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-xl hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] transition-all duration-700 group flex flex-col justify-between min-h-[340px] relative overflow-hidden hover:-translate-y-3">
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/5 blur-[80px] group-hover:bg-indigo-500/15 transition-all"></div>
+               <div key={p.id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all duration-300 group relative flex flex-col justify-between">
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-10">
-                      <span className={`text-[9px] font-black px-4 py-2 rounded-xl uppercase tracking-[0.2em] ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-600 text-white shadow-lg' : 'bg-emerald-500 text-white shadow-lg'}`}>
-                        {p.type === TransactionType.INVESTMENT ? 'Stock' : 'Comm'}
+                    <div className="flex justify-between items-start mb-4">
+                      <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-500/10 text-indigo-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                        {p.type === TransactionType.INVESTMENT ? 'STOCK' : 'COMMANDE'}
                       </span>
                       <div className="text-right">
-                        <span className="block text-3xl font-black text-emerald-500 tracking-tighter tabular-nums drop-shadow-sm">+{p.potentialProfit.toLocaleString()}€</span>
-                        {p.type === TransactionType.INVESTMENT && (
-                          <span className="block text-[10px] font-bold text-slate-400 uppercase mt-2 tracking-widest italic">Immobilisé: {p.investedAmount}€</span>
-                        )}
+                        <span className="block text-lg font-black text-emerald-500 tabular-nums leading-none">+{p.potentialProfit.toLocaleString('fr-FR')}€</span>
                       </div>
                     </div>
-                    <p className="text-[20px] font-black text-slate-950 dark:text-white truncate uppercase mb-4 tracking-tighter leading-none italic">{p.name}</p>
-                    {p.client && <p className="text-[11px] font-bold text-slate-400 uppercase mb-8 italic tracking-widest border-l-2 border-indigo-200 pl-4">{p.client}</p>}
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate uppercase tracking-tight italic mb-1">{p.name}</p>
+                    {p.client && <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">CLIENT: {p.client}</p>}
                   </div>
-                  <div className="relative z-10 flex flex-col gap-4">
-                    <div className="flex items-center gap-3 mb-4">
-                       <span className="text-[10px] font-black bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-400 px-6 py-3 rounded-2xl uppercase tracking-[0.3em] border border-slate-100 dark:border-slate-700/50 italic">{p.method}</span>
+                  <div className="mt-6 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 mb-2">
+                       <span className="text-[8px] font-black bg-slate-50 dark:bg-slate-800 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700/50 uppercase tracking-widest">{p.method}</span>
                     </div>
                     <button 
                       onClick={() => onConfirmSale(p.id)} 
-                      className="w-full text-[11px] font-black uppercase tracking-[0.4em] bg-slate-950 dark:bg-indigo-600 text-white py-6 rounded-[2rem] hover:bg-emerald-500 dark:hover:bg-emerald-500 transition-all shadow-2xl active:scale-[0.95] flex items-center justify-center gap-3"
+                      className="w-full text-[9px] font-black uppercase tracking-[0.2em] bg-slate-950 dark:bg-indigo-600 text-white py-3 rounded-xl hover:bg-emerald-500 transition-all shadow-md active:scale-95"
                     >
-                      Encaisser <Icons.Plus />
+                      CLÔTURER AUDIT
                     </button>
                   </div>
                </div>
