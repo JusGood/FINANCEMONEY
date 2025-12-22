@@ -20,7 +20,7 @@ const App: React.FC = () => {
     const init = async () => {
       const isConfigured = DB.initDB();
       if (!isConfigured) {
-        // Fallback
+        // Logique de config ici si nécessaire
       } else {
         const sb = DB.getSupabase();
         if (sb) {
@@ -65,7 +65,6 @@ const App: React.FC = () => {
       setActiveView(d.owner);
     } catch (err: any) {
       if (err.sql) {
-        alert("Erreur Base de données : Colonne manquante. Regardez le message d'erreur en haut du journal.");
         setDbError(`Mise à jour de la base de données requise. Exécutez ce code dans le SQL Editor de Supabase :\n\n${err.sql}`);
       } else {
         alert("Erreur lors de l'enregistrement");
@@ -86,41 +85,16 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRevertSale = async (originalTxId: string) => {
-    if (confirm("Annuler l'encaissement ?")) {
-      try {
-        const originalTx = transactions.find(t => t.id === originalTxId);
-        if (!originalTx) return;
-
-        await DB.updateTransactionDB(originalTxId, { ...originalTx, isSold: false });
-
-        if (originalTx.type !== TransactionType.INCOME && originalTx.type !== TransactionType.TRANSFER) {
-           const relatedIncome = transactions.find(t => 
-             t.type === TransactionType.INCOME && 
-             t.note?.includes(`[REF:${originalTxId}]`)
-           );
-           if (relatedIncome) {
-             await DB.deleteTransactionDB(relatedIncome.id);
-           }
-        }
-
-        await loadTransactions();
-      } catch (err) {
-        alert("Erreur lors de l'annulation");
-      }
-    }
-  };
-
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-xs">
-      Chargement du Vault...
+      SYNCHRONISATION VAULT...
     </div>
   );
 
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-white/5 backdrop-blur-2xl p-12 rounded-[3rem] border border-white/10 shadow-2xl">
+        <div className="max-w-md w-full bg-white/5 backdrop-blur-2xl p-12 rounded-[3.5rem] border border-white/10 shadow-2xl">
           <h1 className="text-2xl font-black text-white italic mb-10 uppercase tracking-tighter">MILLIONAIRE <span className="text-indigo-500">2027</span></h1>
           <form onSubmit={async (e) => {
             e.preventDefault();
@@ -164,7 +138,7 @@ const App: React.FC = () => {
                if (!tx) return;
                
                if (tx.type === TransactionType.INCOME) {
-                 await DB.updateTransactionDB(id, {...tx, isSold: true, date: new Date().toISOString().split('T')[0]});
+                 await DB.updateTransactionDB(id, {...tx, isSold: true});
                } else {
                  await DB.updateTransactionDB(id, {...tx, isSold: true});
                  await DB.saveTransaction({
@@ -172,7 +146,7 @@ const App: React.FC = () => {
                    date: new Date().toISOString().split('T')[0],
                    amount: (tx.amount || 0) + (tx.expectedProfit || 0),
                    category: tx.category, type: TransactionType.INCOME, account: tx.account,
-                   owner: tx.owner, note: `Vente [REF:${tx.id}]: ${tx.projectName}`, isSold: true, method: tx.method
+                   owner: tx.owner, note: `Encaissement [REF:${tx.id}]: ${tx.projectName}`, isSold: true, method: tx.method
                  });
                }
                await loadTransactions();
@@ -188,13 +162,14 @@ const App: React.FC = () => {
             </div>
           )}
 
+          {/* RÉTABLISSEMENT : Journal Audit avec Style Haute-Fidélité */}
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors relative z-0">
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
-              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal d'Audit Financier</h4>
+              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal des Audits Vault</h4>
               <div className="relative flex-1 max-sm:w-full max-w-sm">
                 <input 
                   type="text" 
-                  placeholder="RECHERCHER DANS LE VAULT..." 
+                  placeholder="RECHERCHE STRATÉGIQUE..." 
                   className="bg-white dark:bg-slate-950 rounded-2xl px-6 py-3 text-[11px] font-black uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 border-none w-full transition-all placeholder:text-slate-300" 
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)} 
@@ -205,11 +180,11 @@ const App: React.FC = () => {
               <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[10px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-8 py-5">Dossier / Libellé</th>
-                    <th className="px-8 py-5">Type / Actif</th>
+                    <th className="px-8 py-5">Dossier / Note</th>
+                    <th className="px-8 py-5">Activité / Méthode</th>
                     <th className="px-8 py-5">Agent</th>
-                    <th className="px-8 py-5">Statut</th>
-                    <th className="px-8 py-5 text-right">Mouvement / Profit</th>
+                    <th className="px-8 py-5">Statut Audit</th>
+                    <th className="px-8 py-5 text-right">Profit / Mouvement</th>
                     <th className="px-8 py-5 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -217,7 +192,9 @@ const App: React.FC = () => {
                   {transactions
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView || (activeView === Owner.CRYPTO && t.account === AccountType.CRYPTO)) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
-                      const displayAmount = t.type === TransactionType.CLIENT_ORDER ? (t.expectedProfit || 0) : t.amount;
+                      // RÉTABLISSEMENT : Logique d'affichage des montants
+                      const isClientOrder = t.type === TransactionType.CLIENT_ORDER;
+                      const displayAmount = isClientOrder ? (t.expectedProfit || 0) : t.amount;
                       
                       let isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
                       if (t.type === TransactionType.TRANSFER) {
@@ -232,13 +209,13 @@ const App: React.FC = () => {
                           <td className="px-8 py-6">
                             <div className="flex flex-col">
                               <span className="font-black uppercase text-sm text-slate-900 dark:text-white truncate max-w-[250px] tracking-tight">{t.projectName || t.category}</span>
-                              <span className="text-[10px] text-slate-400 font-bold tabular-nums tracking-wider uppercase mt-1">{t.date}</span>
+                              <span className="text-[10px] text-slate-400 font-bold tabular-nums tracking-wider uppercase mt-1 italic">{t.date}</span>
                             </div>
                           </td>
                           <td className="px-8 py-6">
-                            <div className="flex flex-col gap-1">
-                              <span className={`w-fit text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500/10 text-indigo-500' : t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                                {t.type}
+                            <div className="flex flex-col gap-1.5">
+                              <span className={`w-fit text-[8px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500 text-white' : t.type === TransactionType.INCOME ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                                {t.type} {t.method !== 'Standard' ? `(${t.method})` : ''}
                               </span>
                               {t.account === AccountType.CRYPTO && (
                                 <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic ml-1">🪙 {t.assetQuantity} {t.assetSymbol}</span>
@@ -259,7 +236,7 @@ const App: React.FC = () => {
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-3">
                                <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.1em] ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
-                                {t.isSold ? 'REÇU / CLOS' : 'EN ATTENTE'}
+                                {t.isSold ? 'AUDIT CLOS' : 'HORS CAISSE'}
                               </span>
                             </div>
                           </td>
