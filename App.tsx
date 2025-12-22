@@ -146,7 +146,7 @@ const App: React.FC = () => {
                    date: new Date().toISOString().split('T')[0],
                    amount: (tx.amount || 0) + (tx.expectedProfit || 0),
                    category: tx.category, type: TransactionType.INCOME, account: tx.account,
-                   owner: tx.owner, note: `Encaissement [REF:${tx.id}]: ${tx.projectName}`, isSold: true, method: tx.method
+                   owner: tx.owner, note: `Encaissement Audit [REF:${tx.id}]: ${tx.projectName}`, isSold: true, method: tx.method
                  });
                }
                await loadTransactions();
@@ -155,21 +155,21 @@ const App: React.FC = () => {
 
           {dbError && (
             <div className="bg-rose-500/10 border border-rose-500/50 p-6 rounded-3xl text-rose-500 mb-8">
-               <h5 className="font-black uppercase text-xs tracking-widest mb-2">⚠️ MISE À JOUR VAULT REQUISE</h5>
+               <h5 className="font-black uppercase text-xs tracking-widest mb-2">⚠️ SYSTÈME BASE DE DONNÉES À METTRE À JOUR</h5>
                <pre className="text-[10px] bg-black/20 p-4 rounded-xl whitespace-pre-wrap font-mono select-all text-white">
                  {dbError}
                </pre>
             </div>
           )}
 
-          {/* RÉTABLISSEMENT : Journal Audit avec Style Haute-Fidélité */}
+          {/* JOURNAL D'AUDIT : RÉTABLISSEMENT STYLE 0.60 ET VISIBILITÉ */}
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors relative z-0">
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
-              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal des Audits Vault</h4>
+              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal des Flux Vault</h4>
               <div className="relative flex-1 max-sm:w-full max-w-sm">
                 <input 
                   type="text" 
-                  placeholder="RECHERCHE STRATÉGIQUE..." 
+                  placeholder="RECHERCHER PROJET / CLIENT..." 
                   className="bg-white dark:bg-slate-950 rounded-2xl px-6 py-3 text-[11px] font-black uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 border-none w-full transition-all placeholder:text-slate-300" 
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)} 
@@ -180,19 +180,18 @@ const App: React.FC = () => {
               <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[10px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-8 py-5">Dossier / Note</th>
-                    <th className="px-8 py-5">Activité / Méthode</th>
-                    <th className="px-8 py-5">Agent</th>
-                    <th className="px-8 py-5">Statut Audit</th>
-                    <th className="px-8 py-5 text-right">Profit / Mouvement</th>
-                    <th className="px-8 py-5 text-center">Actions</th>
+                    <th className="px-8 py-5 tracking-widest">Dossier / Client</th>
+                    <th className="px-8 py-5 tracking-widest">Activité / Méthode</th>
+                    <th className="px-8 py-5 tracking-widest">Agent(s)</th>
+                    <th className="px-8 py-5 tracking-widest">Statut</th>
+                    <th className="px-8 py-5 text-right tracking-widest">Valeur Flux</th>
+                    <th className="px-8 py-5 text-center tracking-widest">Audit</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {transactions
-                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView || (activeView === Owner.CRYPTO && t.account === AccountType.CRYPTO)) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
+                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView || (activeView === Owner.CRYPTO && t.account === AccountType.CRYPTO)) && (!searchTerm || (t.projectName || t.category || t.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
-                      // RÉTABLISSEMENT : Logique d'affichage des montants
                       const isClientOrder = t.type === TransactionType.CLIENT_ORDER;
                       const displayAmount = isClientOrder ? (t.expectedProfit || 0) : t.amount;
                       
@@ -209,13 +208,16 @@ const App: React.FC = () => {
                           <td className="px-8 py-6">
                             <div className="flex flex-col">
                               <span className="font-black uppercase text-sm text-slate-900 dark:text-white truncate max-w-[250px] tracking-tight">{t.projectName || t.category}</span>
-                              <span className="text-[10px] text-slate-400 font-bold tabular-nums tracking-wider uppercase mt-1 italic">{t.date}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-slate-400 font-bold tabular-nums uppercase italic">{t.date}</span>
+                                {t.clientName && <span className="text-[10px] text-indigo-400 font-black uppercase tracking-wider">/ {t.clientName}</span>}
+                              </div>
                             </div>
                           </td>
                           <td className="px-8 py-6">
                             <div className="flex flex-col gap-1.5">
-                              <span className={`w-fit text-[8px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500 text-white' : t.type === TransactionType.INCOME ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                                {t.type} {t.method !== 'Standard' ? `(${t.method})` : ''}
+                              <span className={`w-fit text-[8px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : t.type === TransactionType.INCOME ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                                {t.type} {t.method !== 'Standard' ? `[${t.method}]` : ''}
                               </span>
                               {t.account === AccountType.CRYPTO && (
                                 <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic ml-1">🪙 {t.assetQuantity} {t.assetSymbol}</span>

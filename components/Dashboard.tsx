@@ -22,7 +22,6 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       : transactions.filter(t => t.owner === ownerFilter || t.toOwner === ownerFilter)
   , [transactions, ownerFilter]);
 
-  // RÉTABLISSEMENT : Calcul Holdings Crypto
   const cryptoHoldings = useMemo(() => {
     const holdings: Record<string, number> = {};
     filtered.forEach(t => {
@@ -53,7 +52,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     }, 0);
   }, [cryptoHoldings, cryptoPrices]);
 
-  // RÉTABLISSEMENT : Calcul Stats (Froid et précis)
+  // CALCUL STATS ULTRA-PRÉCIS
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
     if (curr.isForecast) return acc;
     if (curr.account === AccountType.CRYPTO) return acc;
@@ -83,7 +82,6 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   const fiatCash = stats.initial + stats.income - stats.expense - stats.invested;
   const currentTotalCash = fiatCash + cryptoValue;
 
-  // RÉTABLISSEMENT : Dossiers en attente (Le coeur du métier)
   const pendingItems = useMemo(() => {
     return filtered
       .filter(t => (ownerFilter === Owner.GLOBAL || t.owner === ownerFilter) && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && !t.isSold)
@@ -106,13 +104,13 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   };
 
   return (
-    <div className="space-y-10">
-      {/* Fortune Section */}
+    <div className="space-y-10 animate-in fade-in duration-700">
+      {/* Section Fortune */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group transition-all duration-500">
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-3">
-              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50 italic">FORTUNE TOTALE ESTIMÉE (VAULT)</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50 italic">FORTUNE NETTE ESTIMÉE (VAULT)</p>
               <button onClick={() => setShowDetails(!showDetails)} className="text-[10px] font-black bg-white/10 text-white px-4 py-2 rounded-xl border border-white/10 hover:bg-white/20 transition-all">
                 {showDetails ? 'MASQUER' : 'DÉTAILS'}
               </button>
@@ -125,17 +123,17 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
             </div>
             <div className="mt-8 flex gap-8 border-t border-white/10 pt-6">
                <div>
-                  <p className="text-[10px] font-black text-white/30 uppercase mb-1">CASH DISPO</p>
+                  <p className="text-[10px] font-black text-white/30 uppercase mb-1">CASH FIAT</p>
                   <p className="text-lg font-black text-white">{fiatCash.toLocaleString()}€</p>
                </div>
                <div>
-                  <p className="text-[10px] font-black text-white/30 uppercase mb-1">VALEUR CRYPTO</p>
+                  <p className="text-[10px] font-black text-white/30 uppercase mb-1">CRYPTO ASSETS</p>
                   <p className="text-lg font-black text-amber-400">+{cryptoValue.toLocaleString()}€</p>
                </div>
             </div>
             {showDetails && (
               <div className="mt-6 p-4 bg-black/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
-                 <p className="text-[9px] font-black text-white/40 uppercase mb-3 tracking-widest italic italic">Actifs en Possession</p>
+                 <p className="text-[9px] font-black text-white/40 uppercase mb-3 tracking-widest italic">Actifs en Possession</p>
                  <div className="space-y-2">
                    {(Object.entries(cryptoHoldings) as [string, number][]).map(([symbol, qty]) => (
                      <div key={symbol} className="flex justify-between items-center text-xs">
@@ -152,10 +150,10 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm transition-all">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm transition-all hover:border-indigo-500/50">
            <div className="flex justify-between items-center mb-4">
-             <h3 className="text-[11px] font-black tracking-[0.3em] uppercase text-slate-400 italic">Audit Stratégique</h3>
-             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 uppercase px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg tracking-widest transition-all">Analyses</button>
+             <h3 className="text-[11px] font-black tracking-[0.3em] uppercase text-slate-400 italic">Audit Stratégique IA</h3>
+             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 uppercase px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg tracking-widest transition-all">Analyser</button>
            </div>
            <div className="min-h-[60px] flex items-center">
              {aiReport ? (
@@ -163,7 +161,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
              ) : (
                <div className="flex items-center gap-3">
                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest animate-pulse">Synchronisation IA...</span>
+                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest">En attente d'analyse...</span>
                </div>
              )}
            </div>
@@ -172,18 +170,18 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 h-[320px] shadow-sm">
-           <BalanceTrendChart transactions={filtered} />
+           <BalanceTrendChart transactions={filtered} ownerFilter={ownerFilter} />
         </div>
         <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 h-[320px] flex items-center justify-center shadow-sm">
            <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
-      {/* RÉTABLISSEMENT : DOSSIERS EN ATTENTE (Restauration Complète) */}
+      {/* RÉSULTATS EN ATTENTE : RESTAURATION COMPLÈTE */}
       {pendingItems.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xl mt-8">
            <div className="px-8 py-5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-             <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] italic">Dossiers à Encaisser ({pendingItems.length})</span>
+             <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] italic">Audits en cours (Hors-Caisse) : {pendingItems.length}</span>
            </div>
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-x divide-y divide-slate-100 dark:divide-slate-800">
              {pendingItems.map(p => (
@@ -191,7 +189,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                   <div>
                     <div className="flex justify-between items-start mb-4">
                       <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wider ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40'}`}>
-                        {p.type === TransactionType.INVESTMENT ? 'Stock Flip' : 'Client Direct'}
+                        {p.type === TransactionType.INVESTMENT ? 'Flip Stock' : 'Comm Client'}
                       </span>
                       <div className="text-right">
                         <span className="block text-sm font-black text-emerald-500">+{p.potentialProfit.toLocaleString()}€</span>
@@ -201,12 +199,12 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                       </div>
                     </div>
                     <p className="text-[13px] font-black text-slate-900 dark:text-white truncate uppercase mb-1 tracking-tight">{p.name}</p>
-                    {p.client && <p className="text-[9px] font-bold text-slate-400 uppercase mb-3 italic">Client: {p.client}</p>}
+                    {p.client && <p className="text-[9px] font-bold text-slate-400 uppercase mb-3 italic tracking-wide">Client: {p.client}</p>}
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-[8px] font-black bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded-md uppercase tracking-widest">{p.method}</span>
                     </div>
                   </div>
-                  <button onClick={() => onConfirmSale(p.id)} className="w-full text-[10px] font-black uppercase tracking-[0.2em] bg-slate-900 dark:bg-indigo-600 text-white py-3 rounded-2xl hover:bg-emerald-500 transition-all shadow-lg active:scale-95">Confirmer Encaissement</button>
+                  <button onClick={() => onConfirmSale(p.id)} className="w-full text-[10px] font-black uppercase tracking-[0.2em] bg-slate-900 dark:bg-indigo-600 text-white py-3 rounded-2xl hover:bg-emerald-500 transition-all shadow-lg active:scale-95">Valider Encaissement</button>
                </div>
              ))}
            </div>
