@@ -68,28 +68,8 @@ const App: React.FC = () => {
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
     
+    // On met juste à jour le statut, on ne crée pas de doublon "Revenu"
     await DB.updateTransactionDB(id, {...tx, isSold: true});
-
-    const incomeAmount = tx.type === TransactionType.INVESTMENT 
-      ? ((tx.amount || 0) + (tx.expectedProfit || 0)) 
-      : (tx.expectedProfit || 0);
-
-    await DB.saveTransaction({
-      id: Math.random().toString(36).substr(2, 9),
-      date: new Date().toISOString().split('T')[0],
-      amount: 0,
-      expectedProfit: incomeAmount,
-      category: tx.category, 
-      type: TransactionType.INCOME, 
-      account: tx.account,
-      owner: tx.owner, 
-      note: `Réception : ${tx.projectName || tx.category}`, 
-      isSold: true, 
-      method: tx.method,
-      assetSymbol: tx.assetSymbol,
-      assetQuantity: tx.assetQuantity
-    });
-
     await loadTransactions();
   };
 
@@ -195,7 +175,7 @@ const App: React.FC = () => {
                       const isPending = !t.isSold && (t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INVESTMENT);
 
                       return (
-                        <tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group ${isPending ? 'opacity-50' : ''}`}>
+                        <tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group ${isPending ? 'opacity-50 italic' : ''}`}>
                           <td className="px-10 py-6">
                             <div className="flex flex-col">
                               <span className="font-black uppercase text-[12px] text-slate-900 dark:text-white italic tracking-tighter truncate max-w-[250px]">{t.projectName || t.category}</span>

@@ -4,15 +4,16 @@ import { Transaction, Owner } from "../types";
 
 const getAIInstance = () => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("Clé API manquante");
+  if (!apiKey) return null;
   return new GoogleGenAI({ apiKey });
 };
 
 export const getFinancialHealthReport = async (transactions: Transaction[], owner: Owner) => {
   try {
     const ai = getAIInstance();
+    if (!ai) return "Analyse indisponible (Clé API manquante).";
+    
     const model = 'gemini-3-flash-preview';
-
     const summary = transactions.map(t => ({
       owner: t.owner,
       type: t.type,
@@ -42,9 +43,13 @@ export const getFinancialHealthReport = async (transactions: Transaction[], owne
 };
 
 export const getCryptoPrices = async (symbols: string[]): Promise<Record<string, number>> => {
+  const fallbacks: Record<string, number> = { "BTC": 95000, "ETH": 2600, "LTC": 92, "SOL": 185, "USDT": 1 };
   if (symbols.length === 0) return {};
+  
   try {
     const ai = getAIInstance();
+    if (!ai) return fallbacks;
+
     const prompt = `Donne les prix actuels en EUR pour : ${symbols.join(', ')}. Format JSON strict : {"SYMBOLE": PRIX_NB}.`;
 
     const response = await ai.models.generateContent({
@@ -59,7 +64,6 @@ export const getCryptoPrices = async (symbols: string[]): Promise<Record<string,
     const text = response.text || "{}";
     return JSON.parse(text.replace(/```json|```/g, ''));
   } catch (error) {
-    console.error("Crypto Price Error:", error);
-    return { "BTC": 95000, "ETH": 2600, "LTC": 92, "SOL": 185, "USDT": 1 };
+    return fallbacks;
   }
 };

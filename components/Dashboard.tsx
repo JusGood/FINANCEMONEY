@@ -24,7 +24,7 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
       : transactions.filter(t => t.owner === viewType || t.toOwner === viewType);
   }, [transactions, viewType]);
 
-  // Calcul du stock réel de crypto
+  // Calcul du stock réel de crypto (uniquement les transactions confirmées ou soldes initiaux)
   const cryptoHoldings = useMemo(() => {
     const holdings: Record<string, number> = {};
     const txsToSum = viewType === 'CryptoView' ? transactions : filtered;
@@ -50,10 +50,8 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
     const fetchPrices = async () => {
       const symbols = Object.keys(cryptoHoldings);
       if (symbols.length > 0) {
-        try {
-          const prices = await getCryptoPrices(symbols);
-          setCryptoPrices(prices || {});
-        } catch (e) { console.debug("Prix fallbacks utilisés."); }
+        const prices = await getCryptoPrices(symbols);
+        setCryptoPrices(prices || {});
       }
     };
     fetchPrices();
@@ -66,33 +64,36 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
   }, [cryptoHoldings, cryptoPrices]);
 
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
+    // Si c'est de la crypto, on l'exclut du cash FIAT
     if (curr.account === AccountType.CRYPTO) return acc;
-    const amount = curr.amount || 0;
-    const profit = curr.expectedProfit || 0;
+    
+    // On ne compte les commissions que SI elles sont encaissées
+    const profit = (curr.isSold || curr.type === TransactionType.INITIAL_BALANCE) ? (curr.expectedProfit || 0) : 0;
+    const expense = curr.type === TransactionType.EXPENSE || curr.type === TransactionType.INVESTMENT ? (curr.amount || 0) : 0;
 
     if (viewType === Owner.GLOBAL) {
       if (curr.type === TransactionType.TRANSFER) return acc;
-      if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += amount;
-      else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += profit;
-      else if (curr.type === TransactionType.EXPENSE) acc.expense += amount;
-      else if (curr.type === TransactionType.INVESTMENT) acc.invested += amount;
-      else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += profit;
+      if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += (curr.amount || 0);
+      else {
+        acc.income += profit;
+        acc.expense += expense;
+      }
     } else {
       if (curr.type === TransactionType.TRANSFER) {
-        if (curr.owner === (viewType as any)) acc.expense += amount;
-        if (curr.toOwner === (viewType as any)) acc.income += amount;
+        if (curr.owner === (viewType as any)) acc.expense += (curr.amount || 0);
+        if (curr.toOwner === (viewType as any)) acc.income += (curr.amount || 0);
       } else if (curr.owner === (viewType as any)) {
-        if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += amount;
-        else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += profit;
-        else if (curr.type === TransactionType.EXPENSE) acc.expense += amount;
-        else if (curr.type === TransactionType.INVESTMENT) acc.invested += amount;
-        else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += profit;
+        if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += (curr.amount || 0);
+        else {
+          acc.income += profit;
+          acc.expense += expense;
+        }
       }
     }
     return acc;
   }, { initial: 0, income: 0, expense: 0, invested: 0 }), [filtered, viewType]);
 
-  const fiatCash = (stats.initial || 0) + (stats.income || 0) - (stats.expense || 0) - (stats.invested || 0);
+  const fiatCash = stats.initial + stats.income - stats.expense;
   const currentTotalCash = viewType === 'CryptoView' ? cryptoTotalValueEuro : (fiatCash + cryptoTotalValueEuro);
 
   const pendingItems = useMemo(() => {
@@ -110,10 +111,8 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
 
   const fetchAiReport = async () => {
     setLoadingReport(true);
-    try {
-      const report = await getFinancialHealthReport(filtered, viewType as any);
-      setAiReport(report);
-    } catch (e) { setAiReport("Analyse indisponible."); }
+    const report = await getFinancialHealthReport(filtered, viewType as any);
+    setAiReport(report);
     setLoadingReport(false);
   };
 
@@ -128,7 +127,7 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
           <div className="relative z-10">
             <div className="flex justify-between items-center mb-3">
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 italic">
-                {isCryptoOnly ? 'VALEUR TOTALE DES ACTIFS CRYPTO' : 'SOLDE CONSOLIDÉ DU VAULT'}
+                {isCryptoOnly ? 'PORTEFEUILLE ACTIFS RÉELS' : 'VALEUR TOTALE CONSOLIDÉE'}
               </p>
             </div>
             
@@ -142,13 +141,13 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
             <div className={`grid grid-cols-1 md:grid-cols-3 gap-10 border-t pt-10 ${isCryptoOnly ? 'border-amber-500/10' : 'border-white/5'}`}>
                {!isCryptoOnly && (
                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">CASH & BANQUE</p>
+                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">ESPÈCES / BANQUE</p>
                     <p className="text-3xl font-black text-white italic">{(fiatCash || 0).toLocaleString('fr-FR')}€</p>
                  </div>
                )}
                
                <div className={`${isCryptoOnly ? 'col-span-2' : 'col-span-1'} space-y-1`}>
-                  <p className="text-[10px] font-black text-amber-500/40 uppercase tracking-widest">ACTIFS NUMÉRIQUES</p>
+                  <p className="text-[10px] font-black text-amber-500/40 uppercase tracking-widest">JETONS (VAULT)</p>
                   <div className="flex flex-col">
                     <p className="text-3xl font-black text-amber-500 italic">{(cryptoTotalValueEuro || 0).toLocaleString('fr-FR')}€</p>
                     <div className="flex flex-wrap gap-2 mt-4">
@@ -163,7 +162,7 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
                </div>
 
                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-indigo-400/40 uppercase tracking-widest">EN COURS</p>
+                  <p className="text-[10px] font-black text-indigo-400/40 uppercase tracking-widest">BÉNÉFICES FUTURS</p>
                   <p className="text-3xl font-black text-indigo-400 italic">
                     +{(pendingItems.reduce((sum, p) => sum + p.profit, 0) || 0).toLocaleString('fr-FR')}€
                   </p>
@@ -172,17 +171,17 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
           </div>
         </div>
 
-        {/* ANALYSE IA */}
+        {/* IA */}
         <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm group">
            <div className="flex justify-between items-center mb-8">
-             <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400 italic">SYSTEM PILOT</h3>
+             <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400 italic">MONITORING</h3>
              <button onClick={fetchAiReport} disabled={loadingReport} className="text-[9px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-950 px-4 py-2 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
-                {loadingReport ? 'ANALYSING...' : 'RUN IA'}
+                {loadingReport ? 'CALCUL...' : 'ANALYSE IA'}
              </button>
            </div>
            <div className="flex-1 flex items-center">
              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 italic leading-loose border-l-4 border-indigo-600 pl-6 py-2">
-               {aiReport || "Lancez l'IA pour obtenir une analyse prédictive de vos actifs."}
+               {aiReport || "L'IA analyse vos logs pour détecter des tendances de rentabilité."}
              </p>
            </div>
         </div>
@@ -190,7 +189,7 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
 
       {!isCryptoOnly && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 h-[250px] shadow-sm overflow-hidden">
+          <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 h-[250px] shadow-sm overflow-hidden relative">
              <BalanceTrendChart transactions={filtered} ownerFilter={viewType === Owner.GLOBAL ? Owner.GLOBAL : viewType as any} />
           </div>
           <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 h-[250px] flex flex-col items-center justify-center shadow-sm overflow-hidden">
@@ -203,7 +202,7 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
       {pendingItems.length > 0 && (
         <div className="space-y-6">
            <div className="flex items-center gap-6 px-4">
-             <span className="text-[12px] font-black uppercase text-slate-400 tracking-[0.3em] italic">DÉBOUCLAGE EN ATTENTE ({pendingItems.length})</span>
+             <span className="text-[12px] font-black uppercase text-slate-400 tracking-[0.3em] italic">RÉCEPTION DES FONDS ({pendingItems.length})</span>
              <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800 opacity-20"></div>
            </div>
            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -225,7 +224,7 @@ const Dashboard: React.FC<Props> = ({ transactions, viewType, onConfirmSale }) =
                     onClick={() => onConfirmSale(p.id)} 
                     className="mt-6 w-full text-[10px] font-black uppercase bg-slate-950 dark:bg-indigo-600 text-white py-4 rounded-[1.5rem] hover:bg-emerald-600 transition-all shadow-lg active:scale-95"
                   >
-                    RECEVOIR LE GAIN
+                    CAISSER GAIN
                   </button>
                </div>
              ))}
