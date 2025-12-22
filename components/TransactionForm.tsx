@@ -118,7 +118,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Owner Switch */}
+          {/* Switch de l'Agent */}
           <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1.5">
             {[Owner.LARBI, Owner.YASSINE].map(o => (
               <button key={o} type="button" onClick={() => setFormData({...formData, owner: o})} className={`flex-1 py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${formData.owner === o ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'}`}>
@@ -158,56 +158,56 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             </div>
           </div>
 
-          {/* Section spécifique Commission Client */}
+          {/* Section spécifique Commission Client (Calcul auto) */}
           {isCommission && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-800/20 animate-in fade-in slide-in-from-top-2">
               <div className="space-y-2">
                 <label className="text-[11px] font-black uppercase text-indigo-400 ml-4">Prix du Produit (€)</label>
-                <input type="number" step="0.01" value={formData.productPrice} onChange={(e) => setFormData({...formData, productPrice: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" placeholder="ex: 1200" />
+                <input type="number" step="0.01" value={formData.productPrice} onChange={(e) => setFormData({...formData, productPrice: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none shadow-sm" placeholder="ex: 1200" />
               </div>
               <div className="space-y-2">
                 <label className="text-[11px] font-black uppercase text-indigo-400 ml-4">Frais (%)</label>
-                <input type="number" step="0.1" value={formData.feePercentage} onChange={(e) => setFormData({...formData, feePercentage: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" />
+                <input type="number" step="0.1" value={formData.feePercentage} onChange={(e) => setFormData({...formData, feePercentage: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none shadow-sm" />
               </div>
             </div>
           )}
 
-          {/* Section spécifique Achat Flip / Stock */}
+          {/* Section spécifique Achat Flip / Stock (Mise vs Profit) */}
           {isInvestment && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-emerald-50 dark:bg-emerald-900/10 rounded-[2.5rem] border border-emerald-100 dark:border-emerald-800/20 animate-in fade-in slide-in-from-top-2">
               <div className="space-y-2">
                 <label className="text-[11px] font-black uppercase text-emerald-500 ml-4">Montant Investi (€)</label>
-                <input type="number" step="0.01" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" placeholder="Ce que vous avez payé" />
+                <input type="number" step="0.01" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none shadow-sm" placeholder="Ce que vous payez" />
               </div>
               <div className="space-y-2">
                 <label className="text-[11px] font-black uppercase text-emerald-500 ml-4">Bénéfice Attendu (€)</label>
-                <input type="number" step="0.01" value={formData.expectedProfit} onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" placeholder="Profit net souhaité" />
+                <input type="number" step="0.01" value={formData.expectedProfit} onChange={(e) => setFormData({...formData, expectedProfit: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none shadow-sm" placeholder="Profit net souhaité" />
               </div>
             </div>
           )}
 
-          {/* Section spécifique Crypto */}
+          {/* Section spécifique Crypto (Si actif sélectionné) */}
           {isCrypto && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] border border-amber-100 dark:border-amber-800/20 animate-in fade-in slide-in-from-top-2">
               <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase text-amber-500 ml-4">Choisir l'Actif</label>
+                <label className="text-[11px] font-black uppercase text-amber-500 ml-4">Actif Crypto</label>
                 <select value={formData.assetSymbol} onChange={(e) => setFormData({...formData, assetSymbol: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none">
                   {CRYPTO_ASSETS.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-[11px] font-black uppercase text-amber-500 ml-4">Quantité</label>
-                <input type="number" step="0.000001" value={formData.assetQuantity} onChange={(e) => setFormData({...formData, assetQuantity: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" placeholder="ex: 1.7" />
+                <input type="number" step="0.000001" value={formData.assetQuantity} onChange={(e) => setFormData({...formData, assetQuantity: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none shadow-sm" placeholder="ex: 1.7" />
               </div>
             </div>
           )}
 
-          {/* Affichage du Montant Principal / Profit Attendu */}
+          {/* Bloc Montant Final / Profit Central */}
           {!isInvestment && (
-            <div className="p-12 bg-slate-950 rounded-[3rem] text-center border border-white/5 relative overflow-hidden group">
+            <div className="p-12 bg-slate-950 rounded-[3rem] text-center border border-white/5 relative overflow-hidden group shadow-inner">
               <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-all"></div>
               <p className="relative z-10 text-[11px] font-black uppercase text-indigo-400 mb-4 tracking-[0.5em]">
-                {isCommission ? 'BÉNÉFICE ATTENDU' : 'MONTANT DE L\'OPÉRATION'}
+                {isCommission ? 'BÉNÉFICE NET À ENCAISSER' : 'MONTANT DU MOUVEMENT'}
               </p>
               <div className="relative z-10 flex items-center justify-center gap-4">
                  <input
@@ -222,11 +222,11 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             </div>
           )}
 
-          {/* Détails complémentaires */}
+          {/* Détails : Projet & Client (Toujours utiles) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-slate-400 ml-4 italic tracking-widest">Nom du Projet / Produit</label>
-               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase outline-none border-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="ex: MacBook Pro M3" />
+               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-xs uppercase outline-none border-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="ex: iPhone 15 Pro Max" />
             </div>
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-slate-400 ml-4 italic tracking-widest">Nom du Client</label>
@@ -234,8 +234,8 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-8 py-6 bg-slate-50 dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700/50">
-            <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest italic">L'argent est-il déjà dans le Vault ?</span>
+          <div className="flex items-center justify-between px-8 py-6 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700/50">
+            <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest italic">Opération réglée / Cash reçu ?</span>
             <button type="button" onClick={() => setFormData({...formData, isSold: !formData.isSold})} className={`w-14 h-8 rounded-full relative transition-all ${formData.isSold ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-slate-300 dark:bg-slate-600'}`}>
               <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${formData.isSold ? 'left-7' : 'left-1'}`}></div>
             </button>

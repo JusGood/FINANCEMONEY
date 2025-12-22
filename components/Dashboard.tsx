@@ -105,9 +105,9 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   return (
     <div className="space-y-10">
-      {/* Fortune Section */}
+      {/* Section Fortune */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group transition-all">
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-3">
               <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50 italic">VALEUR NETTE VAULT (CASH + CRYPTO)</p>
@@ -150,7 +150,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm transition-all">
            <div className="flex justify-between items-center mb-4">
              <h3 className="text-[11px] font-black tracking-[0.3em] uppercase text-slate-400 italic">Audit Stratégique Vault</h3>
              <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 uppercase px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg tracking-widest transition-all">Analyses</button>
@@ -161,13 +161,14 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
              ) : (
                <div className="flex items-center gap-3">
                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest animate-pulse">Synchronisation...</span>
+                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest">Initialisation...</span>
                </div>
              )}
            </div>
         </div>
       </div>
 
+      {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 h-[320px] shadow-sm">
            <BalanceTrendChart transactions={filtered} />
@@ -204,7 +205,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                       <span className="text-[8px] font-black bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded-md uppercase tracking-widest">{p.method}</span>
                     </div>
                   </div>
-                  <button onClick={() => onConfirmSale(p.id)} className="w-full text-[10px] font-black uppercase tracking-[0.2em] bg-slate-900 dark:bg-indigo-600 text-white py-3 rounded-2xl hover:bg-emerald-500 dark:hover:bg-emerald-500 transition-all shadow-lg active:scale-95">Valider Encaissement</button>
+                  <button onClick={() => onConfirmSale(p.id)} className="w-full text-[10px] font-black uppercase tracking-[0.2em] bg-slate-900 dark:bg-indigo-600 text-white py-3 rounded-2xl hover:bg-emerald-500 transition-all shadow-lg active:scale-95">Valider Encaissement</button>
                </div>
              ))}
            </div>
