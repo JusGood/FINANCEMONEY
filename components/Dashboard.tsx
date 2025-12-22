@@ -44,9 +44,9 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       if (symbols.length > 0) {
         try {
           const prices = await getCryptoPrices(symbols);
-          setCryptoPrices(prices);
+          setCryptoPrices(prices || {});
         } catch (e) {
-          console.debug("IA non configurée ou erreur réseau.");
+          console.debug("Prix indisponibles.");
         }
       }
     };
@@ -98,7 +98,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         id: t.id,
         type: t.type,
         asset: t.account === AccountType.CRYPTO ? t.assetSymbol : '€',
-        qty: t.assetQuantity
+        qty: t.assetQuantity || 0
       }));
   }, [filtered, ownerFilter]);
 
@@ -108,21 +108,20 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       const report = await getFinancialHealthReport(filtered, ownerFilter);
       setAiReport(report);
     } catch (e) {
-      setAiReport("IA indisponible. Vérifiez votre clé API.");
+      setAiReport("Conseil indisponible. Vérifiez la connexion.");
     }
     setLoadingReport(false);
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 bg-slate-900 p-6 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full"></div>
+    <div className="space-y-5 animate-in fade-in duration-500">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-8 bg-slate-900 p-8 rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex justify-between items-center mb-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/40 italic">SOLDE ACTUEL CONSOLIDÉ</p>
-              <button onClick={() => setShowDetails(!showDetails)} className="text-[9px] font-bold bg-white/5 text-white/60 px-3 py-1 rounded-lg hover:bg-white/10 transition-all uppercase">
-                {showDetails ? 'Masquer' : 'Détails'}
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40 italic">SOLDE CONSOLIDÉ</p>
+              <button onClick={() => setShowDetails(!showDetails)} className="text-[9px] font-bold bg-white/5 text-white/60 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all">
+                {showDetails ? 'MASQUER' : 'DÉTAILS'}
               </button>
             </div>
             
@@ -133,31 +132,31 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
               <span className="text-xs font-bold text-white/30 uppercase tracking-widest italic">EUR</span>
             </div>
             
-            <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-6">
-               <div className="space-y-0.5">
-                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">DISPONIBLE</p>
-                  <p className="text-lg font-black text-white">{(fiatCash || 0).toLocaleString('fr-FR')}€</p>
+            <div className="grid grid-cols-3 gap-6 border-t border-white/5 pt-6">
+               <div>
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">ESPÈCES/BANQUE</p>
+                  <p className="text-xl font-black text-white">{(fiatCash || 0).toLocaleString('fr-FR')}€</p>
                </div>
-               <div className="space-y-0.5">
-                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">CRYPTO (EST.)</p>
-                  <p className="text-lg font-black text-amber-500">{(cryptoValue || 0).toLocaleString('fr-FR')}€</p>
+               <div>
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">PORTEFEUILLE CRYPTO</p>
+                  <p className="text-xl font-black text-amber-500">{(cryptoValue || 0).toLocaleString('fr-FR')}€</p>
                </div>
-               <div className="space-y-0.5">
-                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">EN ATTENTE</p>
-                  <p className="text-lg font-black text-indigo-400">
+               <div>
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">BÉNÉFICES PRÉVUS</p>
+                  <p className="text-xl font-black text-indigo-400">
                     +{(pendingItems.reduce((sum, p) => sum + p.profit, 0) || 0).toLocaleString('fr-FR')}€
                   </p>
                </div>
             </div>
 
             {showDetails && (
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in fade-in zoom-in-95">
+              <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2">
                  {(Object.entries(cryptoHoldings) as [string, number][]).filter(([_,q])=>q!==0).map(([symbol, qty]) => (
-                   <div key={symbol} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center transition-all hover:bg-white/10">
+                   <div key={symbol} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex justify-between items-center transition-all hover:bg-white/10">
                       <span className="text-white/40 font-black text-[10px] uppercase">{symbol}</span>
                       <div className="text-right">
-                        <span className="block text-xs font-black text-white">{(qty || 0).toFixed(4)}</span>
-                        <span className="text-[9px] text-emerald-500 font-bold italic">≈ {((qty || 0) * (cryptoPrices[symbol] || 0)).toLocaleString('fr-FR')}€</span>
+                        <span className="block text-sm font-black text-white">{(qty || 0).toFixed(4)}</span>
+                        <span className="text-[10px] text-emerald-500 font-bold italic">≈ {((qty || 0) * (cryptoPrices[symbol] || 0)).toLocaleString('fr-FR')}€</span>
                       </div>
                    </div>
                  ))}
@@ -166,42 +165,41 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
-           <div className="flex justify-between items-center mb-4">
-             <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400 italic">ANALYSE CONSEIL</h3>
-             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[9px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition-all uppercase">
-                {loadingReport ? 'CALCUL...' : 'ACTUALISER'}
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+           <div className="flex justify-between items-center mb-6">
+             <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400 italic">ANALYSE RAPIDE</h3>
+             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[9px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition-all">
+                {loadingReport ? 'CALCUL...' : 'ANALYSER'}
              </button>
            </div>
-           <div className="flex-1 flex items-center">
-             {aiReport ? (
-               <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-relaxed border-l-2 border-indigo-500 pl-3 italic">{aiReport}</p>
-             ) : (
-               <p className="text-[10px] font-bold uppercase text-slate-300 italic">Lancez une analyse pour vos conseils personnalisés.</p>
-             )}
-           </div>
+           <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 italic leading-relaxed border-l-2 border-indigo-500 pl-4">
+             {aiReport || "Cliquez sur Analyser pour obtenir vos conseils de gestion."}
+           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 h-[200px] shadow-sm overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 h-[220px] shadow-sm overflow-hidden">
            <BalanceTrendChart transactions={filtered} ownerFilter={ownerFilter} />
         </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 h-[200px] flex flex-col items-center justify-center shadow-sm overflow-hidden">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 h-[220px] flex flex-col items-center justify-center shadow-sm overflow-hidden">
            <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
       {pendingItems.length > 0 && (
-        <div className="space-y-3">
-           <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2 italic">Dossiers en attente de réception</p>
-           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="space-y-4">
+           <div className="flex items-center gap-3 px-2">
+             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">DOSSIERS À RÉCEPTIONNER ({pendingItems.length})</span>
+             <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800 opacity-20"></div>
+           </div>
+           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
              {pendingItems.map(p => (
-               <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between min-h-[140px] group transition-all hover:shadow-lg">
+               <div key={p.id} className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between min-h-[160px] group transition-all hover:shadow-xl hover:-translate-y-1">
                   <div>
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start mb-3">
                       <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-500/10 text-indigo-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                        {p.type === TransactionType.INVESTMENT ? 'Stock' : 'Vente'}
+                        {p.type === TransactionType.INVESTMENT ? 'Stock' : 'Com.'}
                       </span>
                       <div className="text-right">
                         <span className="text-xs font-black text-emerald-500 block">+{(p.profit || 0).toLocaleString('fr-FR')}€</span>
@@ -212,9 +210,9 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                   </div>
                   <button 
                     onClick={() => onConfirmSale(p.id)} 
-                    className="mt-4 w-full text-[9px] font-black uppercase bg-slate-950 dark:bg-indigo-600 text-white py-2.5 rounded-xl hover:bg-emerald-500 transition-all shadow-md active:scale-95"
+                    className="mt-4 w-full text-[9px] font-black uppercase bg-slate-950 dark:bg-indigo-600 text-white py-3 rounded-2xl hover:bg-emerald-600 transition-all shadow-md active:scale-95"
                   >
-                    Réceptionner
+                    Confirmer Réception
                   </button>
                </div>
              ))}
