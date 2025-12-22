@@ -10,6 +10,8 @@ interface Props {
   onCancel?: () => void;
 }
 
+const CRYPTO_ASSETS = ['BTC', 'ETH', 'LTC', 'SOL', 'USDT', 'XRP', 'DOGE'];
+
 const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
     amount: '0',
@@ -27,7 +29,9 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     clientName: '',
     isForecast: false,
     isSold: true, 
-    method: 'Standard' as OperationMethod
+    method: 'Standard' as OperationMethod,
+    assetSymbol: 'LTC',
+    assetQuantity: ''
   });
 
   useEffect(() => {
@@ -48,41 +52,19 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
         clientName: initialData.clientName || '',
         isForecast: !!initialData.isForecast,
         isSold: initialData.isSold !== undefined ? initialData.isSold : true,
-        method: initialData.method || 'Standard'
+        method: initialData.method || 'Standard',
+        assetSymbol: initialData.assetSymbol || 'LTC',
+        assetQuantity: initialData.assetQuantity?.toString() || ''
       });
     }
   }, [initialData]);
-
-  useEffect(() => {
-    if (formData.type === TransactionType.CLIENT_ORDER && formData.productPrice) {
-      const clientBenefit = parseFloat(formData.productPrice);
-      const percent = parseFloat(formData.feePercentage);
-      if (!isNaN(clientBenefit) && !isNaN(percent)) {
-        setFormData(prev => ({ ...prev, expectedProfit: ((clientBenefit * percent) / 100).toFixed(2) }));
-      }
-    }
-  }, [formData.productPrice, formData.feePercentage, formData.type]);
-
-  const handleProfitChange = (val: string) => {
-    if (formData.type !== TransactionType.CLIENT_ORDER && val.length > 1 && (val.endsWith('x') || val.endsWith('*'))) {
-      const numPart = val.slice(0, -1).replace(',', '.');
-      const multiplier = parseFloat(numPart);
-      const baseAmount = parseFloat(formData.amount || '0');
-      
-      if (!isNaN(multiplier) && !isNaN(baseAmount)) {
-        const result = (baseAmount * multiplier).toFixed(2);
-        setFormData({ ...formData, expectedProfit: result });
-        return;
-      }
-    }
-    setFormData({ ...formData, expectedProfit: val });
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isClientOrder = formData.type === TransactionType.CLIENT_ORDER;
     const isIncome = formData.type === TransactionType.INCOME;
     const isTransfer = formData.type === TransactionType.TRANSFER;
+    const isCrypto = formData.account === AccountType.CRYPTO;
     let finalProfit = formData.expectedProfit.toString().replace(/[x*]/g, '').replace(',', '.');
     
     const transactionData: Omit<Transaction, 'id'> = {
@@ -101,7 +83,9 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
       clientName: formData.clientName.trim() || undefined,
       isForecast: formData.isForecast,
       isSold: (formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) ? formData.isSold : formData.isSold,
-      method: formData.method
+      method: formData.method,
+      assetSymbol: isCrypto ? formData.assetSymbol : undefined,
+      assetQuantity: isCrypto ? parseFloat(formData.assetQuantity) : undefined
     };
 
     if (initialData && onUpdate) onUpdate(initialData.id, { ...initialData, ...transactionData });
@@ -130,35 +114,44 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Activité</label>
-              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType, isSold: true})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                <option value={TransactionType.CLIENT_ORDER}>Commission (Apport d'affaire)</option>
-                <option value={TransactionType.INVESTMENT}>Achat Flip (Stock personnel)</option>
-                <option value={TransactionType.INCOME}>Revenu Direct / Salaire</option>
-                <option value={TransactionType.EXPENSE}>Dépense / Frais</option>
-                <option value={TransactionType.TRANSFER}>Transfert Interne (Compte à compte)</option>
+              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Type de Compte</label>
+              <select value={formData.account} onChange={(e) => setFormData({...formData, account: e.target.value as AccountType})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                <option value={AccountType.BANK}>🏦 Compte Bancaire</option>
+                <option value={AccountType.CRYPTO}>🪙 Portefeuille Crypto</option>
+                <option value={AccountType.CASH}>💵 Espèces / Physique</option>
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest">Date prévue/réelle</label>
-              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest italic">Activité</label>
+              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm border-none outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                <option value={TransactionType.CLIENT_ORDER}>Commission Client</option>
+                <option value={TransactionType.INVESTMENT}>Achat Flip / Stock</option>
+                <option value={TransactionType.INCOME}>Revenu Direct / Salaire</option>
+                <option value={TransactionType.EXPENSE}>Dépense / Frais</option>
+                <option value={TransactionType.TRANSFER}>Transfert Interne</option>
+              </select>
             </div>
           </div>
 
-          {formData.type === TransactionType.TRANSFER && (
-            <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl flex gap-1.5 animate-in slide-in-from-top-2">
-               {[Owner.LARBI, Owner.YASSINE].map(o => (
-                <button key={o} type="button" disabled={formData.owner === o} onClick={() => setFormData({...formData, toOwner: o})} className={`flex-1 py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${formData.toOwner === o ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/30' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 disabled:opacity-20'}`}>
-                  Vers {o}
-                </button>
-              ))}
+          {formData.account === AccountType.CRYPTO && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-indigo-500/5 rounded-[2.5rem] border border-indigo-500/10 animate-in fade-in slide-in-from-top-2">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black uppercase text-indigo-400 ml-4">Actif Crypto</label>
+                <select value={formData.assetSymbol} onChange={(e) => setFormData({...formData, assetSymbol: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none">
+                  {CRYPTO_ASSETS.map(asset => <option key={asset} value={asset}>{asset}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black uppercase text-indigo-400 ml-4">Quantité (ex: 1.7)</label>
+                <input type="number" step="0.000001" value={formData.assetQuantity} onChange={(e) => setFormData({...formData, assetQuantity: e.target.value})} className="w-full p-5 bg-white dark:bg-slate-900 dark:text-white rounded-2xl font-black text-sm outline-none border-none" placeholder="0.000000" />
+              </div>
             </div>
           )}
 
           <div className="p-12 bg-slate-950 rounded-[2.5rem] border border-white/5 text-center shadow-inner relative overflow-hidden group">
             <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-colors"></div>
             <p className="relative z-10 text-[11px] font-black uppercase text-indigo-400 mb-4 tracking-[0.5em]">
-              {formData.type === TransactionType.CLIENT_ORDER ? 'BÉNÉFICE TOTAL DU CLIENT' : 'MONTANT DU MOUVEMENT'}
+              {formData.account === AccountType.CRYPTO ? 'VALEUR ESTIMÉE EN EUROS (FIAT)' : 'MONTANT DE L\'OPÉRATION'}
             </p>
             <div className="relative z-10 flex items-center justify-center gap-4">
                <input
@@ -172,104 +165,15 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
             </div>
           </div>
 
-          {formData.type === TransactionType.INCOME && (
-             <div className="flex items-center justify-between p-8 bg-indigo-500/5 rounded-[2rem] border border-indigo-500/10">
-                <div className="space-y-1">
-                  <p className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Disponibilité des fonds</p>
-                  <p className="text-xs text-slate-500 font-bold">L'argent est-il déjà sur votre compte ?</p>
-                </div>
-                <div className="flex gap-2">
-                   <button 
-                    type="button" 
-                    onClick={() => setFormData({...formData, isSold: false})}
-                    className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!formData.isSold ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
-                   >
-                    Plus tard
-                   </button>
-                   <button 
-                    type="button" 
-                    onClick={() => setFormData({...formData, isSold: true})}
-                    className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.isSold ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}
-                   >
-                    Déjà reçu
-                   </button>
-                </div>
-             </div>
-          )}
-
-          {(formData.type === TransactionType.CLIENT_ORDER || formData.type === TransactionType.INVESTMENT) && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-top-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black uppercase text-slate-400 ml-4">
-                    {formData.type === TransactionType.CLIENT_ORDER ? 'MA PART (COMMISSION 10%)' : 'PROFIT ESTIMÉ'}
-                  </label>
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      value={formData.expectedProfit} 
-                      onChange={(e) => handleProfitChange(e.target.value)} 
-                      className="w-full p-6 bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-500 rounded-2xl font-black text-2xl outline-none border border-emerald-500/20 transition-all focus:ring-2 focus:ring-emerald-500 text-center tabular-nums" 
-                      placeholder="0.00"
-                    />
-                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                       <span className="text-emerald-500/40 font-black text-sm uppercase">€ net</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest">Méthode Utilisée</label>
-                  <select value={formData.method} onChange={(e) => setFormData({...formData, method: e.target.value as OperationMethod})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold text-sm outline-none border-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="Standard">Standard</option>
-                    <option value="FTID">FTID</option>
-                    <option value="DNA">DNA</option>
-                    <option value="EB">EB</option>
-                    <option value="LIT">LIT</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider italic">Statut du dossier</span>
-                <div className="flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setFormData({...formData, isSold: false})}
-                    className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase transition-all tracking-widest ${!formData.isSold ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/20' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    En attente (Ouvert)
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setFormData({...formData, isSold: true})}
-                    className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase transition-all tracking-widest ${formData.isSold ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    Payé (Clos)
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="space-y-6 pt-6">
             <div className="space-y-2">
                <label className="text-[11px] font-black uppercase text-slate-400 ml-4 tracking-widest">Intitulé / Libellé</label>
-               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-sm uppercase outline-none border-none placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Nom du produit, salaire, virement..." />
+               <input type="text" value={formData.projectName} onChange={(e) => setFormData({...formData, projectName: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-black text-sm uppercase outline-none border-none placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Nom du produit, virement..." />
             </div>
             
             <button type="submit" className="w-full bg-slate-900 dark:bg-indigo-600 text-white font-black py-7 rounded-[2rem] text-[13px] uppercase tracking-[0.4em] shadow-2xl hover:bg-indigo-700 dark:hover:bg-indigo-500 hover:-translate-y-1 transition-all active:scale-95">
               {initialData ? 'Mettre à jour' : 'Enregistrer le flux'}
             </button>
-            
-            {initialData && onDelete && (
-              <button 
-                type="button" 
-                onClick={() => onDelete(initialData.id)}
-                className="w-full bg-rose-500/10 text-rose-500 font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.3em] hover:bg-rose-500 hover:text-white transition-all mt-6"
-              >
-                Supprimer
-              </button>
-            )}
           </div>
         </form>
       </div>

@@ -1,8 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
-import { Transaction, TransactionType, Owner } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Transaction, TransactionType, Owner, AccountType } from '../types';
 import { BalanceTrendChart, CategoryPieChart } from './Charts';
-import { getFinancialHealthReport } from '../services/geminiService';
+import { getFinancialHealthReport, getCryptoPrices } from '../services/geminiService';
 
 interface Props {
   transactions: Transaction[];
@@ -14,6 +14,8 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   const [aiReport, setAiReport] = useState<string | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [cryptoPrices, setCryptoPrices] = useState<Record<string, number>>({});
+  const [loadingPrices, setLoadingPrices] = useState(false);
 
   const filtered = useMemo(() => 
     ownerFilter === Owner.GLOBAL 
@@ -21,23 +23,56 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       : transactions.filter(t => t.owner === ownerFilter || t.toOwner === ownerFilter)
   , [transactions, ownerFilter]);
 
+  // Calcul des holdings crypto
+  const cryptoHoldings = useMemo(() => {
+    const holdings: Record<string, number> = {};
+    filtered.forEach(t => {
+      if (t.account === AccountType.CRYPTO && t.assetSymbol && t.assetQuantity) {
+        const qty = (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE || (t.type === TransactionType.TRANSFER && t.toOwner === ownerFilter)) 
+          ? t.assetQuantity 
+          : -t.assetQuantity;
+        holdings[t.assetSymbol] = (holdings[t.assetSymbol] || 0) + qty;
+      }
+    });
+    return holdings;
+  }, [filtered, ownerFilter]);
+
+  // Récupération des prix au chargement ou au changement de filtre
+  useEffect(() => {
+    const fetchPrices = async () => {
+      const symbols = Object.keys(cryptoHoldings);
+      if (symbols.length > 0) {
+        setLoadingPrices(true);
+        const prices = await getCryptoPrices(symbols);
+        setCryptoPrices(prices);
+        setLoadingPrices(false);
+      }
+    };
+    fetchPrices();
+  }, [cryptoHoldings]);
+
+  // Explicitly casting Object.entries to [string, number][] to fix arithmetic operation type errors
+  const cryptoValue = useMemo(() => {
+    return (Object.entries(cryptoHoldings) as [string, number][]).reduce((sum, [symbol, qty]) => {
+      return sum + (qty * (cryptoPrices[symbol] || 0));
+    }, 0);
+  }, [cryptoHoldings, cryptoPrices]);
+
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
     if (curr.isForecast) return acc;
+    if (curr.account === AccountType.CRYPTO) return acc; // Géré séparément par la valeur actuelle
 
-    // Logique globale vs individuelle
     if (ownerFilter === Owner.GLOBAL) {
-      if (curr.type === TransactionType.TRANSFER) return acc; // Transfert interne = 0 net
-      
+      if (curr.type === TransactionType.TRANSFER) return acc;
       if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += curr.amount;
       else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += curr.amount;
       else if (curr.type === TransactionType.EXPENSE) acc.expense += curr.amount;
       else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
       else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
     } else {
-      // Vue individuelle (Larbi ou Yassine)
       if (curr.type === TransactionType.TRANSFER) {
-        if (curr.owner === ownerFilter) acc.expense += curr.amount; // Sortie
-        if (curr.toOwner === ownerFilter) acc.income += curr.amount; // Entrée
+        if (curr.owner === ownerFilter) acc.expense += curr.amount;
+        if (curr.toOwner === ownerFilter) acc.income += curr.amount;
       } else if (curr.owner === ownerFilter) {
         if (curr.type === TransactionType.INITIAL_BALANCE) acc.initial += curr.amount;
         else if (curr.type === TransactionType.INCOME && curr.isSold) acc.income += curr.amount;
@@ -46,29 +81,25 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
       }
     }
-    
     return acc;
   }, { initial: 0, income: 0, expense: 0, invested: 0 }), [filtered, ownerFilter]);
 
-  const currentCash = stats.initial + stats.income - stats.expense - stats.invested;
+  const fiatCash = stats.initial + stats.income - stats.expense - stats.invested;
+  const currentTotalCash = fiatCash + cryptoValue;
 
   const projects = useMemo(() => {
-    // On n'affiche que les attentes d'encaissement dont on est le propriétaire (l'agent)
     return filtered
       .filter(t => t.owner === ownerFilter && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) && !t.isSold)
       .map(t => ({
         name: t.projectName || t.category || 'Sans Nom',
-        totalSpent: t.amount,
         potentialProfit: t.type === TransactionType.INCOME ? t.amount : (t.expectedProfit || 0),
         originalTransactionId: t.id,
-        type: t.type,
-        owner: t.owner
+        type: t.type
       }));
   }, [filtered, ownerFilter]);
 
   const latentProfits = projects.reduce((sum, p) => sum + p.potentialProfit, 0);
-  const activeStockValue = projects.filter(p => p.type === TransactionType.INVESTMENT).reduce((sum, p) => sum + p.totalSpent, 0);
-  const totalPatrimony = currentCash + latentProfits + activeStockValue;
+  const totalPatrimony = currentTotalCash + latentProfits;
 
   const fetchAiReport = async () => {
     setLoadingReport(true);
@@ -82,69 +113,50 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       {/* Top Bar Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2 bg-slate-900 dark:bg-indigo-900 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden group">
-          {/* Correction : pointer-events-none et z-index bas pour le logo de fond */}
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none z-0">
              <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
           </div>
           
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-3">
-              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">CASH FLOW LIQUIDE</p>
-              <button 
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowDetails(!showDetails);
-                }}
-                className="text-[10px] font-black bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-all border border-white/10 shadow-lg active:scale-95 cursor-pointer"
-              >
-                {showDetails ? 'MASQUER DÉTAILS' : 'VOIR PROVENANCE'}
+              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">FORTUNE GLOBALE (FIAT + CRYPTO)</p>
+              <button onClick={() => setShowDetails(!showDetails)} className="text-[10px] font-black bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl border border-white/10 transition-all">
+                {showDetails ? 'MASQUER' : 'DÉTAILS'}
               </button>
             </div>
 
             <div className="flex items-baseline gap-3">
               <h2 className="text-5xl font-black tracking-tighter tabular-nums text-white italic">
-                {currentCash.toLocaleString()}
+                {currentTotalCash.toLocaleString()}
               </h2>
               <span className="text-sm font-bold text-white/40 uppercase tracking-widest">EUR</span>
             </div>
 
-            {showDetails ? (
-              <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/40 uppercase">Initial :</span>
-                    <span className="text-[12px] font-black text-white">+{stats.initial}€</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/40 uppercase">Gains/Transferts :</span>
-                    <span className="text-[12px] font-black text-emerald-400">+{stats.income}€</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/40 uppercase">Dépenses/Envois :</span>
-                    <span className="text-[12px] font-black text-rose-400">-{stats.expense}€</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/40 uppercase">Stock Actif :</span>
-                    <span className="text-[12px] font-black text-rose-400">-{stats.invested}€</span>
-                  </div>
-                </div>
-                <div className="col-span-2 text-center pt-4">
-                  <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Provenance de chaque euro du Vault</p>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-8 flex gap-8 border-t border-white/10 pt-6">
-                 <div>
-                    <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Patrimoine</p>
-                    <p className="text-lg font-black text-white">{totalPatrimony.toLocaleString()}€</p>
-                 </div>
-                 <div>
-                    <p className="text-[10px] font-black text-white/30 uppercase tracking-wider mb-1">Profits Attendus</p>
-                    <p className="text-lg font-black text-emerald-400">+{latentProfits.toLocaleString()}€</p>
+            <div className="mt-8 flex gap-8 border-t border-white/10 pt-6">
+               <div>
+                  <p className="text-[10px] font-black text-white/30 uppercase mb-1">CASH FIAT</p>
+                  <p className="text-lg font-black text-white">{fiatCash.toLocaleString()}€</p>
+               </div>
+               <div>
+                  <p className="text-[10px] font-black text-white/30 uppercase mb-1">VALEUR CRYPTO</p>
+                  <p className="text-lg font-black text-emerald-400">+{cryptoValue.toLocaleString()}€</p>
+               </div>
+            </div>
+            
+            {showDetails && (
+              <div className="mt-6 p-4 bg-black/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
+                 <p className="text-[9px] font-black text-white/40 uppercase mb-3 tracking-widest">Holdings Actuels</p>
+                 <div className="space-y-2">
+                   {/* Explicitly casting Object.entries to fix toFixed and arithmetic operation errors on qty */}
+                   {(Object.entries(cryptoHoldings) as [string, number][]).map(([symbol, qty]) => (
+                     <div key={symbol} className="flex justify-between items-center text-xs">
+                        <span className="text-white/60 font-bold">{symbol}</span>
+                        <div className="text-right">
+                          <span className="text-white font-black">{qty.toFixed(4)}</span>
+                          <span className="text-emerald-500 ml-2 font-bold italic">≈ {(qty * (cryptoPrices[symbol] || 0)).toLocaleString()}€</span>
+                        </div>
+                     </div>
+                   ))}
                  </div>
               </div>
             )}
@@ -154,7 +166,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
            <div className="flex justify-between items-center mb-4">
              <h3 className="text-[11px] font-black tracking-[0.3em] uppercase text-slate-400 italic">Audit Vault IA</h3>
-             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 uppercase tracking-widest px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">Actualiser</button>
+             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[10px] font-black text-indigo-500 uppercase tracking-widest px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">Analyses</button>
            </div>
            <div className="min-h-[60px] flex items-center">
              {aiReport ? (
@@ -162,7 +174,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
              ) : (
                <div className="flex items-center gap-3">
                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest">En attente d'instruction...</span>
+                 <span className="text-[11px] font-black uppercase text-slate-300 italic tracking-widest">Extraction des données...</span>
                </div>
              )}
            </div>
@@ -190,17 +202,12 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
                <div key={p.originalTransactionId} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
                   <div className="flex justify-between items-start mb-3">
                     <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${p.type === TransactionType.INCOME ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600' : 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600'}`}>
-                      {p.type === TransactionType.INCOME ? 'REVENU' : p.owner}
+                      {p.type === TransactionType.INCOME ? 'REVENU' : 'DOSSIER'}
                     </span>
                     <span className="text-sm font-black text-emerald-500">+{p.potentialProfit}€</span>
                   </div>
                   <p className="text-[12px] font-black text-slate-800 dark:text-slate-200 truncate uppercase mb-4 tracking-tight">{p.name}</p>
-                  <button 
-                    onClick={() => onConfirmSale(p.originalTransactionId!)}
-                    className="w-full text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 py-2.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
-                  >
-                    Confirmer Réception
-                  </button>
+                  <button onClick={() => onConfirmSale(p.originalTransactionId!)} className="w-full text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 py-2.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Encaisser</button>
                </div>
              ))}
            </div>

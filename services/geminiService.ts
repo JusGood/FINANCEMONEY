@@ -2,13 +2,15 @@
 import { GoogleGenAI } from "@google/genai";
 import { Transaction, Owner } from "../types";
 
-export const getFinancialHealthReport = async (transactions: Transaction[], owner: Owner) => {
-  // On initialise à l'intérieur de la fonction pour éviter les erreurs de 'process undefined' au chargement du module
-  try {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) return "Clé API manquante. Configurez votre Vault.";
+const getAIInstance = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) throw new Error("Clé API manquante");
+  return new GoogleGenAI({ apiKey });
+};
 
-    const ai = new GoogleGenAI({ apiKey });
+export const getFinancialHealthReport = async (transactions: Transaction[], owner: Owner) => {
+  try {
+    const ai = getAIInstance();
     const model = 'gemini-3-flash-preview';
 
     const summary = transactions.map(t => ({
@@ -34,5 +36,30 @@ export const getFinancialHealthReport = async (transactions: Transaction[], owne
   } catch (error) {
     console.error("Gemini Error:", error);
     return "Système IA hors-ligne. Gardez la discipline.";
+  }
+};
+
+export const getCryptoPrices = async (symbols: string[]): Promise<Record<string, number>> => {
+  if (symbols.length === 0) return {};
+  try {
+    const ai = getAIInstance();
+    const prompt = `Donne-moi le prix actuel en Euros (EUR) pour les cryptomonnaies suivantes : ${symbols.join(', ')}. 
+    Réponds UNIQUEMENT avec un objet JSON au format : {"SYMBOLE": PRIX_NUMÉRIQUE}. Exemple: {"LTC": 85.50}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json"
+      }
+    });
+
+    const text = response.text || "{}";
+    return JSON.parse(text.replace(/```json|```/g, ''));
+  } catch (error) {
+    console.error("Crypto Price Error:", error);
+    // Fallback statique si l'IA échoue
+    return { "BTC": 92000, "ETH": 2400, "LTC": 90, "SOL": 180 };
   }
 };

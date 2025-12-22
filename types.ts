@@ -2,7 +2,8 @@
 export enum Owner {
   LARBI = 'Larbi',
   YASSINE = 'Yassine',
-  GLOBAL = 'Global'
+  GLOBAL = 'Global',
+  CRYPTO = 'Crypto'
 }
 
 export enum AccountType {
@@ -33,13 +34,15 @@ export interface Transaction {
   type: TransactionType;
   account: AccountType;
   owner: Owner;
-  toOwner?: Owner; // Pour les transferts
+  toOwner?: Owner; 
   note: string;
   projectName?: string; 
   clientName?: string;
   isForecast?: boolean;
   isSold?: boolean; 
   method?: OperationMethod;
+  assetSymbol?: string; // Ex: LTC, BTC
+  assetQuantity?: number; // Ex: 1.7
 }
 
 export interface Note {
@@ -62,5 +65,7 @@ export const CATEGORIES = [
   'LIT',
   'Dépense Courante',
   'Solde Initial',
-  'Transfert Interne'
+  'Transfert Interne',
+  'Achat Crypto',
+  'Vente Crypto'
 ];

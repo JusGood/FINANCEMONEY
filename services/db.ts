@@ -25,7 +25,6 @@ const handleDBError = (error: any) => {
   const msg = error.message || "";
   const details = error.details || "";
   
-  // Détection des colonnes manquantes suite aux mises à jour
   if (msg.includes("column \"method\"") || details.includes("column \"method\"")) {
     const err = new Error("MISSING_COLUMN_METHOD");
     (err as any).sql = "ALTER TABLE transactions ADD COLUMN method text DEFAULT 'Standard';";
@@ -35,6 +34,12 @@ const handleDBError = (error: any) => {
   if (msg.includes("column \"toOwner\"") || details.includes("column \"toOwner\"")) {
     const err = new Error("MISSING_COLUMN_TOOWNER");
     (err as any).sql = "ALTER TABLE transactions ADD COLUMN \"toOwner\" text;";
+    throw err;
+  }
+
+  if (msg.includes("column \"assetSymbol\"") || details.includes("column \"assetSymbol\"")) {
+    const err = new Error("MISSING_COLUMN_ASSETSYMBOL");
+    (err as any).sql = "ALTER TABLE transactions ADD COLUMN \"assetSymbol\" text; ALTER TABLE transactions ADD COLUMN \"assetQuantity\" numeric DEFAULT 0;";
     throw err;
   }
 

@@ -34,6 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
     { id: 'Focus', label: 'Objectifs', icon: <span className="text-lg">🎯</span> },
     { id: Owner.LARBI, label: 'Larbi', icon: <div className="w-6 h-6 flex items-center justify-center font-black text-[11px] bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 rounded-md">L</div> },
     { id: Owner.YASSINE, label: 'Yassine', icon: <div className="w-6 h-6 flex items-center justify-center font-black text-[11px] bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 rounded-md">Y</div> },
+    { id: Owner.CRYPTO, label: 'Crypto', icon: <div className="w-6 h-6 flex items-center justify-center font-black text-[14px] text-amber-500">🪙</div> },
     { id: 'Add', label: 'Ajouter Flux', icon: <Icons.Plus /> },
   ];
 

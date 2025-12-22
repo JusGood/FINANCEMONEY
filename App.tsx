@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Transaction, Owner, TransactionType } from './types';
+import { Transaction, Owner, TransactionType, AccountType } from './types';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import TransactionForm from './components/TransactionForm';
@@ -182,7 +182,7 @@ const App: React.FC = () => {
           {dbError && (
             <div className="bg-rose-500/10 border border-rose-500/50 p-6 rounded-3xl text-rose-500 mb-8">
                <h5 className="font-black uppercase text-xs tracking-widest mb-2">⚠️ MISE À JOUR VAULT REQUISE</h5>
-               <pre className="text-[10px] bg-black/20 p-4 rounded-xl whitespace-pre-wrap font-mono select-all">
+               <pre className="text-[10px] bg-black/20 p-4 rounded-xl whitespace-pre-wrap font-mono select-all text-white">
                  {dbError}
                </pre>
             </div>
@@ -206,7 +206,7 @@ const App: React.FC = () => {
                 <thead>
                   <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[10px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
                     <th className="px-8 py-5">Dossier / Libellé</th>
-                    <th className="px-8 py-5">Type</th>
+                    <th className="px-8 py-5">Type / Actif</th>
                     <th className="px-8 py-5">Agent</th>
                     <th className="px-8 py-5">Statut</th>
                     <th className="px-8 py-5 text-right">Mouvement / Profit</th>
@@ -215,7 +215,7 @@ const App: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {transactions
-                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
+                    .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView || (activeView === Owner.CRYPTO && t.account === AccountType.CRYPTO)) && (!searchTerm || (t.projectName || t.category || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
                       const displayAmount = t.type === TransactionType.CLIENT_ORDER ? (t.expectedProfit || 0) : t.amount;
                       
@@ -236,9 +236,14 @@ const App: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-8 py-6">
-                            <span className={`text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500/10 text-indigo-500' : t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                              {t.type}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className={`w-fit text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider ${t.type === TransactionType.TRANSFER ? 'bg-indigo-500/10 text-indigo-500' : t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                                {t.type}
+                              </span>
+                              {t.account === AccountType.CRYPTO && (
+                                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic ml-1">🪙 {t.assetQuantity} {t.assetSymbol}</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-8 py-6">
                             {t.type === TransactionType.TRANSFER ? (
