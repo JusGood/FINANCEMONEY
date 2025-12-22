@@ -86,8 +86,11 @@ const App: React.FC = () => {
   };
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-xs">
-      SYNCHRONISATION VAULT...
+    <div className="h-screen flex items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-xs italic">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        SYNCHRONISATION VAULT...
+      </div>
     </div>
   );
 
@@ -100,11 +103,11 @@ const App: React.FC = () => {
             e.preventDefault();
             const target = e.target as any;
             const { error } = await DB.signIn(target.email.value, target.password.value);
-            if (error) alert("Accès refusé");
+            if (error) alert("Accès refusé. Riguer obligatoire.");
           }} className="space-y-6">
-            <input name="email" type="email" placeholder="Email Privé" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
-            <input name="password" type="password" placeholder="Clé d'Accès" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
-            <button type="submit" className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all hover:bg-indigo-500 active:scale-95 shadow-xl shadow-indigo-900/20">Déverrouiller le Vault</button>
+            <input name="email" type="email" placeholder="Identifiant Vault" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
+            <input name="password" type="password" placeholder="Clé d'Accès Privée" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
+            <button type="submit" className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all hover:bg-indigo-500 active:scale-95 shadow-xl shadow-indigo-900/20">DÉVERROUILLER</button>
           </form>
         </div>
       </div>
@@ -137,9 +140,11 @@ const App: React.FC = () => {
                const tx = transactions.find(t => t.id === id);
                if (!tx) return;
                
+               // Si c'est un Revenu direct ou déjà encaissé, on le marque simplement
                if (tx.type === TransactionType.INCOME) {
                  await DB.updateTransactionDB(id, {...tx, isSold: true});
                } else {
+                 // Pour un Stock ou Commande, on solde l'audit et on crée le Revenu correspondant
                  await DB.updateTransactionDB(id, {...tx, isSold: true});
                  await DB.saveTransaction({
                    id: Math.random().toString(36).substr(2, 9),
@@ -155,21 +160,21 @@ const App: React.FC = () => {
 
           {dbError && (
             <div className="bg-rose-500/10 border border-rose-500/50 p-6 rounded-3xl text-rose-500 mb-8">
-               <h5 className="font-black uppercase text-xs tracking-widest mb-2">⚠️ SYSTÈME BASE DE DONNÉES À METTRE À JOUR</h5>
+               <h5 className="font-black uppercase text-xs tracking-widest mb-2">⚠️ MISE À JOUR VAULT REQUISE</h5>
                <pre className="text-[10px] bg-black/20 p-4 rounded-xl whitespace-pre-wrap font-mono select-all text-white">
                  {dbError}
                </pre>
             </div>
           )}
 
-          {/* JOURNAL D'AUDIT : RÉTABLISSEMENT STYLE 0.60 ET VISIBILITÉ */}
+          {/* JOURNAL D'AUDIT : RESTAURATION STYLE 0.60 ET VISIBILITÉ HAUTE PERFORMANCE */}
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors relative z-0">
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
-              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal des Flux Vault</h4>
+              <h4 className="font-black uppercase text-[12px] tracking-[0.3em] text-slate-400 italic">Journal des Audits Stratégiques</h4>
               <div className="relative flex-1 max-sm:w-full max-w-sm">
                 <input 
                   type="text" 
-                  placeholder="RECHERCHER PROJET / CLIENT..." 
+                  placeholder="FILTRER PROJET / CLIENT / AGENT..." 
                   className="bg-white dark:bg-slate-950 rounded-2xl px-6 py-3 text-[11px] font-black uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 border-none w-full transition-all placeholder:text-slate-300" 
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)} 
@@ -180,24 +185,25 @@ const App: React.FC = () => {
               <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50/30 dark:bg-slate-800/20 text-slate-400 text-[10px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-8 py-5 tracking-widest">Dossier / Client</th>
+                    <th className="px-8 py-5 tracking-widest">Dossier / Note</th>
                     <th className="px-8 py-5 tracking-widest">Activité / Méthode</th>
                     <th className="px-8 py-5 tracking-widest">Agent(s)</th>
-                    <th className="px-8 py-5 tracking-widest">Statut</th>
+                    <th className="px-8 py-5 tracking-widest">Statut Audit</th>
                     <th className="px-8 py-5 text-right tracking-widest">Valeur Flux</th>
-                    <th className="px-8 py-5 text-center tracking-widest">Audit</th>
+                    <th className="px-8 py-5 text-center tracking-widest">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {transactions
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView || (activeView === Owner.CRYPTO && t.account === AccountType.CRYPTO)) && (!searchTerm || (t.projectName || t.category || t.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
+                      // Logique d'affichage des montants (Restauration Profit vs Mouvement)
                       const isClientOrder = t.type === TransactionType.CLIENT_ORDER;
                       const displayAmount = isClientOrder ? (t.expectedProfit || 0) : t.amount;
                       
                       let isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
                       if (t.type === TransactionType.TRANSFER) {
-                        if (activeView === Owner.GLOBAL) isPositive = true; 
+                        if (activeView === Owner.GLOBAL) isPositive = true; // Neutre en Global
                         else isPositive = t.toOwner === activeView; 
                       }
                       
@@ -207,10 +213,10 @@ const App: React.FC = () => {
                         <tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group ${!isActuallyReceived ? 'opacity-60 bg-amber-500/5' : ''}`}>
                           <td className="px-8 py-6">
                             <div className="flex flex-col">
-                              <span className="font-black uppercase text-sm text-slate-900 dark:text-white truncate max-w-[250px] tracking-tight">{t.projectName || t.category}</span>
+                              <span className="font-black uppercase text-sm text-slate-900 dark:text-white truncate max-w-[250px] tracking-tight group-hover:text-indigo-600 transition-colors">{t.projectName || t.category}</span>
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[10px] text-slate-400 font-bold tabular-nums uppercase italic">{t.date}</span>
-                                {t.clientName && <span className="text-[10px] text-indigo-400 font-black uppercase tracking-wider">/ {t.clientName}</span>}
+                                {t.clientName && <span className="text-[10px] text-indigo-400 font-black uppercase tracking-wider">/ Client: {t.clientName}</span>}
                               </div>
                             </div>
                           </td>
@@ -237,7 +243,7 @@ const App: React.FC = () => {
                           </td>
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-3">
-                               <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.1em] ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
+                               <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-[0.1em] ${t.isSold ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'}`}>
                                 {t.isSold ? 'AUDIT CLOS' : 'HORS CAISSE'}
                               </span>
                             </div>
