@@ -42,8 +42,12 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     const fetchPrices = async () => {
       const symbols = Object.keys(cryptoHoldings);
       if (symbols.length > 0) {
-        const prices = await getCryptoPrices(symbols);
-        setCryptoPrices(prices);
+        try {
+          const prices = await getCryptoPrices(symbols);
+          setCryptoPrices(prices);
+        } catch (e) {
+          console.debug("IA non configurée ou erreur réseau.");
+        }
       }
     };
     fetchPrices();
@@ -57,7 +61,6 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
 
   const stats = useMemo(() => filtered.reduce((acc, curr) => {
     if (curr.account === AccountType.CRYPTO) return acc;
-
     const amount = curr.amount || 0;
     const profit = curr.expectedProfit || 0;
 
@@ -83,7 +86,7 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     return acc;
   }, { initial: 0, income: 0, expense: 0, invested: 0 }), [filtered, ownerFilter]);
 
-  const fiatCash = stats.initial + stats.income - stats.expense - stats.invested;
+  const fiatCash = (stats.initial || 0) + (stats.income || 0) - (stats.expense || 0) - (stats.invested || 0);
   const currentTotalCash = fiatCash + cryptoValue;
 
   const pendingItems = useMemo(() => {
@@ -92,65 +95,69 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       .map(t => ({
         name: t.projectName || t.category || 'Sans nom',
         profit: t.expectedProfit || 0,
-        capital: t.amount || 0,
         id: t.id,
         type: t.type,
-        client: t.clientName
+        asset: t.account === AccountType.CRYPTO ? t.assetSymbol : '€',
+        qty: t.assetQuantity
       }));
   }, [filtered, ownerFilter]);
 
   const fetchAiReport = async () => {
     setLoadingReport(true);
-    const report = await getFinancialHealthReport(filtered, ownerFilter);
-    setAiReport(report);
+    try {
+      const report = await getFinancialHealthReport(filtered, ownerFilter);
+      setAiReport(report);
+    } catch (e) {
+      setAiReport("IA indisponible. Vérifiez votre clé API.");
+    }
     setLoadingReport(false);
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 max-w-full">
+    <div className="space-y-4 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 bg-slate-900 p-5 rounded-2xl border border-white/5 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 blur-[60px] rounded-full"></div>
+        <div className="lg:col-span-8 bg-slate-900 p-6 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full"></div>
           <div className="relative z-10">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 italic">SOLDE CONSOLIDÉ</p>
-              <button onClick={() => setShowDetails(!showDetails)} className="text-[8px] font-bold bg-white/5 text-white/60 px-2 py-1 rounded-md hover:bg-white/10 transition-all uppercase">
-                {showDetails ? 'Fermer' : 'Détails'}
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40 italic">SOLDE ACTUEL CONSOLIDÉ</p>
+              <button onClick={() => setShowDetails(!showDetails)} className="text-[9px] font-bold bg-white/5 text-white/60 px-3 py-1 rounded-lg hover:bg-white/10 transition-all uppercase">
+                {showDetails ? 'Masquer' : 'Détails'}
               </button>
             </div>
             
-            <div className="flex items-baseline gap-2 mb-6">
-              <h2 className="text-3xl font-black tabular-nums text-white">
+            <div className="flex items-baseline gap-2 mb-8">
+              <h2 className="text-4xl font-black tabular-nums text-white">
                 {(currentTotalCash || 0).toLocaleString('fr-FR')}
               </h2>
-              <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">EUR</span>
+              <span className="text-xs font-bold text-white/30 uppercase tracking-widest italic">EUR</span>
             </div>
             
-            <div className="grid grid-cols-3 gap-3 border-t border-white/5 pt-4">
+            <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-6">
                <div className="space-y-0.5">
-                  <p className="text-[8px] font-bold text-white/30 uppercase">DISPONIBLE</p>
-                  <p className="text-base font-black text-white">{(fiatCash || 0).toLocaleString('fr-FR')}€</p>
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">DISPONIBLE</p>
+                  <p className="text-lg font-black text-white">{(fiatCash || 0).toLocaleString('fr-FR')}€</p>
                </div>
                <div className="space-y-0.5">
-                  <p className="text-[8px] font-bold text-white/30 uppercase">CRYPTO</p>
-                  <p className="text-base font-black text-amber-500">{(cryptoValue || 0).toLocaleString('fr-FR')}€</p>
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">CRYPTO (EST.)</p>
+                  <p className="text-lg font-black text-amber-500">{(cryptoValue || 0).toLocaleString('fr-FR')}€</p>
                </div>
                <div className="space-y-0.5">
-                  <p className="text-[8px] font-bold text-white/30 uppercase">BÉNÉFICES PRÉVUS</p>
-                  <p className="text-base font-black text-indigo-400">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">EN ATTENTE</p>
+                  <p className="text-lg font-black text-indigo-400">
                     +{(pendingItems.reduce((sum, p) => sum + p.profit, 0) || 0).toLocaleString('fr-FR')}€
                   </p>
                </div>
             </div>
 
             {showDetails && (
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 animate-in fade-in slide-in-from-top-1">
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in fade-in zoom-in-95">
                  {(Object.entries(cryptoHoldings) as [string, number][]).filter(([_,q])=>q!==0).map(([symbol, qty]) => (
-                   <div key={symbol} className="p-2 bg-white/5 rounded-lg border border-white/5 flex justify-between items-center">
-                      <span className="text-white/40 font-bold text-[8px]">{symbol}</span>
+                   <div key={symbol} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center transition-all hover:bg-white/10">
+                      <span className="text-white/40 font-black text-[10px] uppercase">{symbol}</span>
                       <div className="text-right">
-                        <span className="block text-[10px] font-black text-white">{qty.toFixed(4)}</span>
-                        <span className="text-[7px] text-emerald-500 font-bold">≈ {((qty || 0) * (cryptoPrices[symbol] || 0)).toLocaleString('fr-FR')}€</span>
+                        <span className="block text-xs font-black text-white">{(qty || 0).toFixed(4)}</span>
+                        <span className="text-[9px] text-emerald-500 font-bold italic">≈ {((qty || 0) * (cryptoPrices[symbol] || 0)).toLocaleString('fr-FR')}€</span>
                       </div>
                    </div>
                  ))}
@@ -159,56 +166,55 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
-           <div className="flex justify-between items-center mb-2">
-             <h3 className="text-[9px] font-black tracking-widest uppercase text-slate-400">ANALYSE IA</h3>
-             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[8px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded-md hover:bg-indigo-600 hover:text-white transition-all">
-                {loadingReport ? 'CALCUL...' : 'ANALYSER'}
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+           <div className="flex justify-between items-center mb-4">
+             <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400 italic">ANALYSE CONSEIL</h3>
+             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[9px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition-all uppercase">
+                {loadingReport ? 'CALCUL...' : 'ACTUALISER'}
              </button>
            </div>
            <div className="flex-1 flex items-center">
              {aiReport ? (
-               <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 leading-snug border-l-2 border-indigo-500 pl-2 italic">{aiReport}</p>
+               <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-relaxed border-l-2 border-indigo-500 pl-3 italic">{aiReport}</p>
              ) : (
-               <p className="text-[9px] font-bold uppercase text-slate-300 italic">Cliquez sur Analyser pour vos conseils.</p>
+               <p className="text-[10px] font-bold uppercase text-slate-300 italic">Lancez une analyse pour vos conseils personnalisés.</p>
              )}
            </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 h-[200px]">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 h-[200px] shadow-sm overflow-hidden">
            <BalanceTrendChart transactions={filtered} ownerFilter={ownerFilter} />
         </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 h-[200px] flex flex-col items-center">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 h-[200px] flex flex-col items-center justify-center shadow-sm overflow-hidden">
            <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
       {pendingItems.length > 0 && (
-        <div className="space-y-2">
-           <div className="flex items-center gap-2 px-1">
-             <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">A CLÔTURER ({pendingItems.length})</span>
-             <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800 opacity-20"></div>
-           </div>
-           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="space-y-3">
+           <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2 italic">Dossiers en attente de réception</p>
+           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
              {pendingItems.map(p => (
-               <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between group transition-all">
-                  <div className="mb-2">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-500/10 text-indigo-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                        {p.type === TransactionType.INVESTMENT ? 'Stock' : 'Com'}
+               <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between min-h-[140px] group transition-all hover:shadow-lg">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-500/10 text-indigo-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                        {p.type === TransactionType.INVESTMENT ? 'Stock' : 'Vente'}
                       </span>
-                      <span className="text-xs font-black text-emerald-500">+{(p.profit || 0).toLocaleString('fr-FR')}€</span>
+                      <div className="text-right">
+                        <span className="text-xs font-black text-emerald-500 block">+{(p.profit || 0).toLocaleString('fr-FR')}€</span>
+                        {p.asset !== '€' && <span className="text-[9px] font-bold text-amber-500 block italic">{(p.qty || 0).toFixed(4)} {p.asset}</span>}
+                      </div>
                     </div>
-                    <p className="text-[10px] font-black text-slate-900 dark:text-white truncate uppercase italic">{p.name}</p>
-                    {p.client && <p className="text-[8px] font-bold text-slate-400 truncate uppercase">Client: {p.client}</p>}
+                    <p className="text-[11px] font-black text-slate-900 dark:text-white truncate uppercase italic">{p.name}</p>
                   </div>
                   <button 
                     onClick={() => onConfirmSale(p.id)} 
-                    className="w-full text-[8px] font-black uppercase bg-slate-950 dark:bg-indigo-600 text-white py-2 rounded-lg hover:bg-emerald-500 transition-all active:scale-95"
+                    className="mt-4 w-full text-[9px] font-black uppercase bg-slate-950 dark:bg-indigo-600 text-white py-2.5 rounded-xl hover:bg-emerald-500 transition-all shadow-md active:scale-95"
                   >
-                    Recevoir
+                    Réceptionner
                   </button>
                </div>
              ))}
