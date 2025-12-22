@@ -27,7 +27,6 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     const holdings: Record<string, number> = {};
     filtered.forEach(t => {
       if (t.account === AccountType.CRYPTO && t.assetSymbol && t.assetQuantity) {
-        // Correct logic for crypto transfers/income
         const isIncoming = (
           (t.type === TransactionType.INCOME || t.type === TransactionType.INITIAL_BALANCE || t.type === TransactionType.CLIENT_ORDER) ||
           (t.type === TransactionType.TRANSFER && t.toOwner === ownerFilter)
@@ -68,7 +67,6 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
       else if (curr.type === TransactionType.INVESTMENT) acc.invested += curr.amount;
       else if (curr.type === TransactionType.CLIENT_ORDER && curr.isSold) acc.income += (curr.expectedProfit || 0);
     } else {
-      // Precise Individual view accounting for transfers
       if (curr.type === TransactionType.TRANSFER) {
         if (curr.owner === ownerFilter) acc.expense += curr.amount;
         if (curr.toOwner === ownerFilter) acc.income += curr.amount;
@@ -90,13 +88,12 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
     return filtered
       .filter(t => (ownerFilter === Owner.GLOBAL || t.owner === ownerFilter) && (t.type === TransactionType.INVESTMENT || t.type === TransactionType.CLIENT_ORDER) && !t.isSold)
       .map(t => ({
-        name: t.projectName || t.category || 'Dossier Anonyme',
+        name: t.projectName || t.category || 'Sans nom',
         potentialProfit: t.expectedProfit || 0,
         investedAmount: t.amount,
         id: t.id,
         type: t.type,
-        client: t.clientName,
-        method: t.method
+        client: t.clientName
       }));
   }, [filtered, ownerFilter]);
 
@@ -108,37 +105,37 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      {/* High Density Fortune Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 bg-slate-950 p-8 rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden group">
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/10 blur-[100px] rounded-full"></div>
+    <div className="space-y-6">
+      {/* Vue d'ensemble condensée */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-8 bg-slate-900 p-6 rounded-3xl border border-white/5 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full"></div>
           <div className="relative z-10">
-            <div className="flex justify-between items-center mb-6">
-              <p className="text-[9px] font-black uppercase tracking-[0.5em] text-white/40 italic">SOLDE NET CONSOLIDÉ</p>
-              <button onClick={() => setShowDetails(!showDetails)} className="text-[9px] font-bold bg-white/5 text-white/50 px-4 py-2 rounded-lg border border-white/5 hover:bg-white/10 hover:text-white transition-all">
-                {showDetails ? 'MASQUER' : 'DÉTAILS'}
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">SOLDE TOTAL ESTIMÉ</p>
+              <button onClick={() => setShowDetails(!showDetails)} className="text-[9px] font-bold bg-white/5 text-white/60 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all uppercase">
+                {showDetails ? 'Masquer' : 'Détails'}
               </button>
             </div>
             
-            <div className="flex items-baseline gap-3 mb-10">
-              <h2 className="text-5xl font-black tracking-tighter tabular-nums text-white italic drop-shadow-xl">
+            <div className="flex items-baseline gap-2 mb-8">
+              <h2 className="text-4xl font-black tabular-nums text-white">
                 {currentTotalCash.toLocaleString('fr-FR')}
               </h2>
-              <span className="text-sm font-bold text-white/20 tracking-widest uppercase">EUR</span>
+              <span className="text-xs font-bold text-white/30 uppercase tracking-widest">EUR</span>
             </div>
             
-            <div className="grid grid-cols-3 gap-6 border-t border-white/5 pt-8">
-               <div className="space-y-1">
-                  <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">CASH</p>
+            <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-6">
+               <div className="space-y-0.5">
+                  <p className="text-[9px] font-bold text-white/30 uppercase">DISPONIBLE</p>
                   <p className="text-lg font-black text-white">{fiatCash.toLocaleString('fr-FR')}€</p>
                </div>
-               <div className="space-y-1">
-                  <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">CRYPTO</p>
-                  <p className="text-lg font-black text-amber-500">+{cryptoValue.toLocaleString('fr-FR')}€</p>
+               <div className="space-y-0.5">
+                  <p className="text-[9px] font-bold text-white/30 uppercase">CRYPTO</p>
+                  <p className="text-lg font-black text-amber-500">{cryptoValue.toLocaleString('fr-FR')}€</p>
                </div>
-               <div className="space-y-1">
-                  <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">AUDITS</p>
+               <div className="space-y-0.5">
+                  <p className="text-[9px] font-bold text-white/30 uppercase">EN ATTENTE</p>
                   <p className="text-lg font-black text-indigo-400">
                     +{pendingItems.reduce((sum, p) => sum + p.potentialProfit, 0).toLocaleString('fr-FR')}€
                   </p>
@@ -146,10 +143,10 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
             </div>
 
             {showDetails && (
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in zoom-in-95">
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2">
                  {(Object.entries(cryptoHoldings) as [string, number][]).filter(([_,q])=>q>0).map(([symbol, qty]) => (
                    <div key={symbol} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center">
-                      <span className="text-white/40 font-black text-[9px]">{symbol}</span>
+                      <span className="text-white/40 font-bold text-[10px]">{symbol}</span>
                       <div className="text-right">
                         <span className="block text-xs font-black text-white">{qty.toFixed(4)}</span>
                         <span className="text-[9px] text-emerald-500 font-bold">≈ {(qty * (cryptoPrices[symbol] || 0)).toLocaleString('fr-FR')}€</span>
@@ -161,74 +158,55 @@ const Dashboard: React.FC<Props> = ({ transactions, ownerFilter, onConfirmSale }
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm relative overflow-hidden">
-           <div className="relative z-10 flex flex-col h-full">
-             <div className="flex justify-between items-center mb-6">
-               <h3 className="text-[9px] font-black tracking-[0.4em] uppercase text-slate-400 italic">CONSEILLER IA ALPHA</h3>
-               <button onClick={fetchAiReport} disabled={loadingReport} className="text-[9px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50">
-                  {loadingReport ? 'ANALYSANT...' : 'GÉNÉRER AUDIT'}
-               </button>
-             </div>
-             <div className="flex-1 flex items-center">
-               {aiReport ? (
-                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100 italic leading-snug border-l-4 border-indigo-600 pl-4">{aiReport}</p>
-               ) : (
-                 <div className="flex items-center gap-3">
-                   <div className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></div>
-                   <span className="text-[9px] font-black uppercase text-slate-300 italic tracking-[0.2em]">IA en attente d'instruction...</span>
-                 </div>
-               )}
-             </div>
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+           <div className="flex justify-between items-center mb-4">
+             <h3 className="text-[10px] font-black tracking-widest uppercase text-slate-400">RAPPORT IA</h3>
+             <button onClick={fetchAiReport} disabled={loadingReport} className="text-[9px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition-all">
+                {loadingReport ? 'ANALYSE...' : 'ACTUALISER'}
+             </button>
+           </div>
+           <div className="flex-1 flex items-center">
+             {aiReport ? (
+               <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-relaxed border-l-2 border-indigo-500 pl-3">{aiReport}</p>
+             ) : (
+               <p className="text-[10px] font-bold uppercase text-slate-300 italic">Lancez une analyse pour vos conseils personnalisés.</p>
+             )}
            </div>
         </div>
       </div>
 
-      {/* Charts - Compact but informative */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 h-[280px] shadow-sm relative">
-           <span className="absolute top-6 left-8 text-[8px] font-black text-slate-300 uppercase tracking-widest">TRAJECTOIRE VAULT</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 h-[240px]">
            <BalanceTrendChart transactions={filtered} ownerFilter={ownerFilter} />
         </div>
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 h-[280px] flex flex-col items-center shadow-sm">
-           <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-4">REPARTITION FLUX</span>
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 h-[240px] flex flex-col items-center">
            <CategoryPieChart transactions={filtered} />
         </div>
       </div>
 
-      {/* Pending Audits - Grid Center */}
+      {/* Dossiers en attente */}
       {pendingItems.length > 0 && (
-        <div className="space-y-4 pt-4">
-           <div className="flex items-center gap-4 px-4">
-             <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em] italic whitespace-nowrap">AUDITS EN COURS ({pendingItems.length})</span>
-             <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
-           </div>
-           
+        <div className="space-y-3">
+           <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">DOSSIERS EN ATTENTE D'ENCAISSEMENT</p>
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
              {pendingItems.map(p => (
-               <div key={p.id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all duration-300 group relative flex flex-col justify-between">
-                  <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${p.type === TransactionType.INVESTMENT ? 'bg-indigo-500/10 text-indigo-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                        {p.type === TransactionType.INVESTMENT ? 'STOCK' : 'COMMANDE'}
+               <div key={p.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between min-h-[160px]">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[8px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded uppercase">
+                        {p.type === TransactionType.INVESTMENT ? 'Stock' : 'Commande'}
                       </span>
-                      <div className="text-right">
-                        <span className="block text-lg font-black text-emerald-500 tabular-nums leading-none">+{p.potentialProfit.toLocaleString('fr-FR')}€</span>
-                      </div>
+                      <span className="text-sm font-black text-emerald-500">+{p.potentialProfit.toLocaleString('fr-FR')}€</span>
                     </div>
-                    <p className="text-sm font-black text-slate-900 dark:text-white truncate uppercase tracking-tight italic mb-1">{p.name}</p>
-                    {p.client && <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">CLIENT: {p.client}</p>}
+                    <p className="text-xs font-black text-slate-900 dark:text-white truncate uppercase">{p.name}</p>
+                    {p.client && <p className="text-[9px] font-bold text-slate-400 truncate">CLIENT: {p.client}</p>}
                   </div>
-                  <div className="mt-6 flex flex-col gap-2">
-                    <div className="flex items-center gap-2 mb-2">
-                       <span className="text-[8px] font-black bg-slate-50 dark:bg-slate-800 text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700/50 uppercase tracking-widest">{p.method}</span>
-                    </div>
-                    <button 
-                      onClick={() => onConfirmSale(p.id)} 
-                      className="w-full text-[9px] font-black uppercase tracking-[0.2em] bg-slate-950 dark:bg-indigo-600 text-white py-3 rounded-xl hover:bg-emerald-500 transition-all shadow-md active:scale-95"
-                    >
-                      CLÔTURER AUDIT
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => onConfirmSale(p.id)} 
+                    className="mt-4 w-full text-[9px] font-black uppercase bg-slate-900 dark:bg-indigo-600 text-white py-2.5 rounded-xl hover:bg-emerald-600 transition-all"
+                  >
+                    Marquer comme reçu
+                  </button>
                </div>
              ))}
            </div>
