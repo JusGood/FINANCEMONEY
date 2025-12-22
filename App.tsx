@@ -48,7 +48,7 @@ const App: React.FC = () => {
   const loadTransactions = async () => {
     try {
       const data = await DB.getTransactions();
-      setTransactions(data);
+      setTransactions(data || []);
       setDbError(null);
     } catch (err: any) {
       if (err.sql) setDbError(err.sql);
@@ -71,56 +71,52 @@ const App: React.FC = () => {
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
     
-    // Marquer l'original comme vendu
     await DB.updateTransactionDB(id, {...tx, isSold: true});
 
-    // Créer le mouvement d'entrée de fonds
-    // Pour une commande client : on n'encaisse que le profit net
-    // Pour un investissement stock : on encaisse le capital investi + le profit
     const incomeAmount = tx.type === TransactionType.INVESTMENT 
-      ? (tx.amount + tx.expectedProfit) 
-      : tx.expectedProfit;
+      ? ((tx.amount || 0) + (tx.expectedProfit || 0)) 
+      : (tx.expectedProfit || 0);
 
     await DB.saveTransaction({
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString().split('T')[0],
-      amount: 0, // Pas de dépense ici
+      amount: 0,
       expectedProfit: incomeAmount,
       category: tx.category, 
       type: TransactionType.INCOME, 
       account: tx.account,
       owner: tx.owner, 
-      note: `Encaissé : ${tx.projectName || tx.category}`, 
+      note: `Reçu : ${tx.projectName || tx.category}`, 
       isSold: true, 
       method: tx.method,
       assetSymbol: tx.assetSymbol,
-      assetQuantity: tx.assetQuantity // Si profit reçu en crypto, on garde la trace
+      assetQuantity: tx.assetQuantity 
     });
 
     await loadTransactions();
   };
 
   if (loading) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-xs italic">
-      <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      Chargement du Vault...
+    <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white font-black uppercase tracking-widest text-[10px] italic">
+      <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+      Chargement...
     </div>
   );
 
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white/5 backdrop-blur-2xl p-10 rounded-3xl border border-white/10 shadow-2xl">
-          <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-8">LE VAULT 2027</h1>
+        <div className="max-w-sm w-full bg-white/5 backdrop-blur-2xl p-8 rounded-2xl border border-white/10 shadow-2xl">
+          <h1 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6">VAULT 2027</h1>
           <form onSubmit={async (e) => {
             e.preventDefault();
             const target = e.target as any;
             const { error } = await DB.signIn(target.email.value, target.password.value);
             if (error) alert("Accès refusé.");
-          }} className="space-y-5">
-            <input name="email" type="email" placeholder="IDENTIFIANT" className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-bold uppercase" required />
-            <input name="password" type="password" placeholder="MOT DE PASSE" className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-bold uppercase" required />
-            <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black uppercase text-[11px] tracking-widest transition-all hover:bg-indigo-500 shadow-xl">Se connecter</button>
+          }} className="space-y-4">
+            <input name="email" type="email" placeholder="AGENT ID" className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white text-[10px] outline-none focus:ring-1 focus:ring-indigo-600 transition-all font-bold uppercase" required />
+            <input name="password" type="password" placeholder="PASSWORD" className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white text-[10px] outline-none focus:ring-1 focus:ring-indigo-600 transition-all font-bold uppercase" required />
+            <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 shadow-xl transition-all">Accéder</button>
           </form>
         </div>
       </div>
@@ -139,7 +135,7 @@ const App: React.FC = () => {
             setActiveView(d.owner);
           }} 
           onDelete={async (id) => {
-            if (confirm("Supprimer définitivement ?")) {
+            if (confirm("Supprimer ?")) {
               await DB.deleteTransactionDB(id);
               await loadTransactions();
               setActiveView(Owner.GLOBAL);
@@ -151,7 +147,7 @@ const App: React.FC = () => {
       ) : activeView === 'Focus' ? (
         <FocusMode owner={Owner.GLOBAL} />
       ) : (
-        <div className="flex flex-col gap-8 animate-in fade-in duration-500">
+        <div className="flex flex-col gap-6 animate-in fade-in duration-500">
           <Dashboard 
             transactions={transactions} 
             ownerFilter={activeView as Owner} 
@@ -159,35 +155,35 @@ const App: React.FC = () => {
           />
 
           {dbError && (
-            <div className="bg-rose-500 p-6 rounded-2xl text-white shadow-lg text-[10px]">
-               <h5 className="font-black uppercase tracking-widest mb-2">MISE À JOUR REQUIS</h5>
-               <pre className="p-3 bg-black/20 rounded-lg whitespace-pre-wrap font-mono select-all overflow-x-auto">{dbError}</pre>
+            <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-rose-500 shadow-sm text-[9px]">
+               <h5 className="font-black uppercase tracking-widest mb-1">Erreur DB</h5>
+               <pre className="p-2 bg-black/10 rounded-lg whitespace-pre-wrap font-mono overflow-x-auto">{dbError}</pre>
             </div>
           )}
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
-              <h4 className="font-black uppercase text-[10px] tracking-widest text-slate-400">Journal des Flux</h4>
-              <div className="flex-1 max-w-xs ml-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/10">
+              <h4 className="font-black uppercase text-[9px] tracking-widest text-slate-400">Journal</h4>
+              <div className="flex-1 max-w-[200px] ml-4">
                 <input 
                   type="text" 
-                  placeholder="Rechercher..." 
-                  className="w-full bg-white dark:bg-slate-950 rounded-lg px-3 py-2 text-[10px] font-bold uppercase outline-none ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-600 transition-all border-none" 
+                  placeholder="Filtrer..." 
+                  className="w-full bg-white dark:bg-slate-950 rounded-lg px-2.5 py-1.5 text-[9px] font-bold uppercase outline-none ring-1 ring-slate-100 dark:ring-slate-800 focus:ring-indigo-600 transition-all border-none" 
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)} 
                 />
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
+              <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
-                  <tr className="bg-slate-50/30 dark:bg-slate-800/10 text-slate-400 text-[9px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-6 py-3">Libellé</th>
-                    <th className="px-6 py-3">Type</th>
-                    <th className="px-6 py-3 text-center">Agents</th>
-                    <th className="px-6 py-3">Statut</th>
-                    <th className="px-6 py-3 text-right">Profit Net</th>
-                    <th className="px-6 py-3 text-center">Action</th>
+                  <tr className="bg-slate-50/30 dark:bg-slate-800/5 text-slate-400 text-[8px] uppercase font-black border-b border-slate-100 dark:border-slate-800">
+                    <th className="px-5 py-2">Dossier</th>
+                    <th className="px-5 py-2">Type</th>
+                    <th className="px-5 py-2 text-center">Source ➔ Cible</th>
+                    <th className="px-5 py-2">État</th>
+                    <th className="px-5 py-2 text-right">Montant</th>
+                    <th className="px-5 py-2 text-center">...</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -195,45 +191,45 @@ const App: React.FC = () => {
                     .filter(t => (activeView === Owner.GLOBAL || t.owner === activeView || t.toOwner === activeView) && (!searchTerm || (t.projectName || t.category || t.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())))
                     .map(t => {
                       const isPositive = t.type === TransactionType.INCOME || t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INITIAL_BALANCE;
-                      const displayAmount = (t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) ? t.expectedProfit : t.amount;
+                      const displayAmount = (t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INCOME) ? (t.expectedProfit || 0) : (t.amount || 0);
                       const isPending = !t.isSold && (t.type === TransactionType.CLIENT_ORDER || t.type === TransactionType.INVESTMENT);
 
                       return (
-                        <tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group ${isPending ? 'opacity-50' : ''}`}>
-                          <td className="px-6 py-4">
+                        <tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group ${isPending ? 'opacity-40' : ''}`}>
+                          <td className="px-5 py-3">
                             <div className="flex flex-col">
-                              <span className="font-black uppercase text-[11px] text-slate-900 dark:text-white truncate max-w-[250px] italic">{t.projectName || t.category}</span>
-                              <span className="text-[9px] text-slate-400 font-bold mt-0.5">{t.date} {t.clientName ? ` / ${t.clientName}` : ''}</span>
+                              <span className="font-black uppercase text-[10px] text-slate-900 dark:text-white truncate max-w-[200px] italic">{t.projectName || t.category}</span>
+                              <span className="text-[8px] text-slate-400 font-bold mt-0.5">{t.date} {t.clientName ? ` / ${t.clientName}` : ''}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${t.type === TransactionType.TRANSFER ? 'bg-indigo-600 text-white' : t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                          <td className="px-5 py-3">
+                            <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${t.type === TransactionType.TRANSFER ? 'bg-indigo-600 text-white' : t.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                               {t.type} {t.method !== 'Standard' ? `[${t.method}]` : ''}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-5 py-3">
                             {t.type === TransactionType.TRANSFER ? (
-                              <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase italic">
+                              <div className="flex items-center justify-center gap-2 text-[9px] font-black uppercase italic">
                                 <span className="text-rose-500">{t.owner}</span>
-                                <span className="opacity-30">➜</span>
+                                <span className="opacity-20">➜</span>
                                 <span className="text-emerald-500">{t.toOwner}</span>
                               </div>
                             ) : (
                               <div className="flex justify-center">
-                                <span className="text-[10px] font-bold uppercase text-indigo-500 bg-indigo-500/5 px-2 py-0.5 rounded">{t.owner}</span>
+                                <span className="text-[9px] font-bold uppercase text-indigo-500 bg-indigo-500/5 px-2 py-0.5 rounded">{t.owner}</span>
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4">
-                             <span className={`text-[8px] font-bold px-2 py-0.5 rounded uppercase ${t.isSold ? 'text-emerald-500' : 'text-amber-500'}`}>
-                                {t.isSold ? 'Encaissé' : 'En attente'}
+                          <td className="px-5 py-3">
+                             <span className={`text-[7px] font-bold px-1.5 py-0.5 rounded uppercase ${t.isSold ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                {t.isSold ? 'Reçu' : 'Attente'}
                              </span>
                           </td>
-                          <td className={`px-6 py-4 text-right font-black tabular-nums text-xs ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {isPositive ? '+' : '-'}{displayAmount.toLocaleString('fr-FR')}€
+                          <td className={`px-5 py-3 text-right font-black tabular-nums text-[11px] ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {isPositive ? '+' : '-'}{(displayAmount || 0).toLocaleString('fr-FR')}€
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all opacity-0 group-hover:opacity-100">✏️</button>
+                          <td className="px-5 py-3 text-center">
+                            <button onClick={() => {setEditingTransaction(t); setActiveView('Add');}} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded opacity-0 group-hover:opacity-100 transition-all">✏️</button>
                           </td>
                         </tr>
                       );
