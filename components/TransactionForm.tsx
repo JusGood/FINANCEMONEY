@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Transaction, AccountType, TransactionType, CATEGORIES, Owner, OperationMethod } from '../types';
+import { getCryptoPrices } from '../services/geminiService';
 
 interface Props {
   onAdd: (transaction: Omit<Transaction, 'id'>) => void;
@@ -11,7 +12,6 @@ interface Props {
 }
 
 const CRYPTO_ASSETS = ['LTC', 'BTC', 'ETH', 'USDT', 'SOL'];
-// Default prices for instant calculation in UI
 const FALLBACK_PRICES: Record<string, number> = { 
   "BTC": 95000, 
   "ETH": 2600, 
@@ -20,8 +20,10 @@ const FALLBACK_PRICES: Record<string, number> = {
   "USDT": 1 
 };
 
-// Fixed the truncated TransactionForm component and added default export to resolve "no default export" error.
 const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialData, onCancel }) => {
+  const [livePrices, setLivePrices] = useState<Record<string, number>>(FALLBACK_PRICES);
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  
   const [formData, setFormData] = useState({
     amount: '0',
     productPrice: '',
@@ -42,29 +44,46 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
     assetQuantity: ''
   });
 
+  // Fetch real-time prices on mount and when symbol changes
+  const updatePrices = useCallback(async () => {
+    setIsFetchingPrice(true);
+    try {
+      const prices = await getCryptoPrices(CRYPTO_ASSETS);
+      setLivePrices(prev => ({ ...prev, ...prices }));
+    } catch (e) {
+      console.error("Erreur de récupération des prix", e);
+    } finally {
+      setIsFetchingPrice(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    updatePrices();
+  }, [updatePrices]);
+
   // Calculate Euro Profit automatically for Client Orders
   useEffect(() => {
     if (formData.type === TransactionType.CLIENT_ORDER) {
       const price = parseFloat(formData.productPrice || '0');
       const fee = parseFloat(formData.feePercentage || '10');
       const profit = (price * (fee / 100)).toFixed(2);
-      // For client orders, cost (amount) is 0
       setFormData(prev => ({ ...prev, expectedProfit: profit, amount: '0' }));
     }
   }, [formData.productPrice, formData.feePercentage, formData.type]);
 
-  // Calculate Crypto Quantity automatically based on Euro Profit
+  // Calculate Crypto Quantity automatically based on LIVE prices
   useEffect(() => {
     if (formData.account === AccountType.CRYPTO && parseFloat(formData.expectedProfit) > 0) {
       const profitEuro = parseFloat(formData.expectedProfit);
-      const price = FALLBACK_PRICES[formData.assetSymbol] || 1;
+      // Use live price if available, otherwise fallback
+      const price = livePrices[formData.assetSymbol] || FALLBACK_PRICES[formData.assetSymbol] || 1;
       const qty = (profitEuro / price).toFixed(6);
       
       setFormData(prev => ({ ...prev, assetQuantity: qty }));
     } else if (formData.account !== AccountType.CRYPTO) {
       setFormData(prev => ({ ...prev, assetQuantity: '' }));
     }
-  }, [formData.expectedProfit, formData.assetSymbol, formData.account]);
+  }, [formData.expectedProfit, formData.assetSymbol, formData.account, livePrices]);
 
   useEffect(() => {
     if (initialData) {
@@ -232,7 +251,13 @@ const TransactionForm: React.FC<Props> = ({ onAdd, onUpdate, onDelete, initialDa
           )}
 
           {isCrypto && (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-amber-500/5 rounded-3xl border border-amber-500/10">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-amber-500/5 rounded-3xl border border-amber-500/10 relative">
+                <div className="absolute top-2 right-4 flex items-center gap-2">
+                  <span className={`text-[8px] font-black uppercase ${isFetchingPrice ? 'animate-pulse text-amber-600' : 'text-slate-400'}`}>
+                    {isFetchingPrice ? 'IA Fetching...' : `LIVE: ${livePrices[formData.assetSymbol]?.toFixed(2)}€`}
+                  </span>
+                  <button type="button" onClick={updatePrices} className="text-xs hover:rotate-180 transition-transform duration-500">🔄</button>
+                </div>
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-amber-500 uppercase ml-1">Actif</label>
                   <select value={formData.assetSymbol} onChange={e => setFormData({...formData, assetSymbol: e.target.value})} className="w-full p-4 bg-white dark:bg-slate-900 dark:text-white rounded-xl font-black text-sm outline-none">
