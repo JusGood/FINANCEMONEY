@@ -42,15 +42,51 @@ export const getFinancialHealthReport = async (transactions: Transaction[], owne
   }
 };
 
+/**
+ * Récupère les prix crypto via API publique (Coinbase) pour la précision en temps réel,
+ * avec un fallback intelligent via Gemini Search si l'API échoue.
+ */
 export const getCryptoPrices = async (symbols: string[]): Promise<Record<string, number>> => {
   const fallbacks: Record<string, number> = { "BTC": 95000, "ETH": 2600, "LTC": 92, "SOL": 185, "USDT": 1 };
   if (symbols.length === 0) return {};
   
+  const results: Record<string, number> = {};
+  
+  try {
+    // Utilisation de l'API publique de Coinbase (Indice de référence fiable)
+    const pricePromises = symbols.map(async (symbol) => {
+      try {
+        const res = await fetch(`https://api.coinbase.com/v2/prices/${symbol}-EUR/spot`);
+        const data = await res.json();
+        if (data?.data?.amount) {
+          return { symbol, price: parseFloat(data.data.amount) };
+        }
+      } catch (e) {
+        return null;
+      }
+      return null;
+    });
+
+    const prices = await Promise.all(pricePromises);
+    prices.forEach(p => {
+      if (p) results[p.symbol] = p.price;
+    });
+
+    // Si on a récupéré tous les prix via l'API, on renvoie
+    if (Object.keys(results).length === symbols.length) return results;
+  } catch (err) {
+    console.warn("Échec de l'API externe, passage à Gemini Search...");
+  }
+
+  // Fallback via Gemini avec recherche web pour les prix manquants
+  const missingSymbols = symbols.filter(s => !results[s]);
+  if (missingSymbols.length === 0) return results;
+
   try {
     const ai = getAIInstance();
-    if (!ai) return fallbacks;
+    if (!ai) return { ...results, ...fallbacks };
 
-    const prompt = `Donne les prix actuels en EUR pour : ${symbols.join(', ')}. Format JSON strict : {"SYMBOLE": PRIX_NB}.`;
+    const prompt = `Trouve le prix actuel exact en EUR (Indice de marché) pour : ${missingSymbols.join(', ')}. Réponds en JSON strict : {"SYMBOLE": PRIX_NB}.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -61,9 +97,9 @@ export const getCryptoPrices = async (symbols: string[]): Promise<Record<string,
       }
     });
 
-    const text = response.text || "{}";
-    return JSON.parse(text.replace(/```json|```/g, ''));
+    const aiPrices = JSON.parse((response.text || "{}").replace(/```json|```/g, ''));
+    return { ...results, ...aiPrices };
   } catch (error) {
-    return fallbacks;
+    return { ...results, ...fallbacks };
   }
 };
